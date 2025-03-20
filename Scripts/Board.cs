@@ -4,12 +4,16 @@ using System.Diagnostics;
 
 public partial class Board : Node2D
 {
-    public static Piece[] BoardTiles;
+    public Piece[,] BoardTiles;
+
+    public GameManager gm;
 
     const string DEFAULT_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
+
+    public int CELL_SIZE = 32;
     public Board() {
-        BoardTiles = new Piece[64];
+        BoardTiles = new Piece[8,8];
         CreateBoard(); // tiles
         ReadForsythEdwards(DEFAULT_FEN); // pieces
     }
@@ -89,20 +93,50 @@ public partial class Board : Node2D
                             break;
                     }
 
-                    col++;
-                    Vector2 pvec = new Vector2(col * 32 - 32, row * 32);
-                    Piece add_piece = new Piece(pvec, type, color);
-                    BoardTiles[row * 7 + col] = add_piece;
+                    
+                    Vector2 pvec = new Vector2(col * 32, row * 32);
+                    Piece add_piece = new Piece(pvec, type, color, this);
+                    BoardTiles[row, col] = add_piece;
                     AddChild(add_piece);
+                    add_piece.set_board_position(new Tuple<int, int>(row, col));
+                    col++;
                 }
             }
         }
     }
 
+    // Returns the index of the mouse position on the board if it exists
+    // null otherwise
+    public Tuple<int, int> GetIndexUnderMouse() {
 
-    private void SetPieces() {
-        
+        Vector2 pos = GetGlobalMousePosition();
+
+        int file = (int)Math.Floor(pos.X / 32);
+        int rank = (int)Math.Floor(pos.Y / 32);
+        if (rank < 8 && rank > -1 && file < 8 && file > -1) {
+            
+            return new Tuple<int, int>(rank, file);
+        }
+        return null;
+    
     }
+
+    public bool move_validation(Piece p, Tuple<int, int> mti) {
+        // TODO:
+        // validation:
+            // move does not land on a same color piece
+            // move does not open up weakness to King (same color)
+
+        return true;
+    }
+
+    public Piece[,] make_move(Piece p, Tuple<int, int> mti) {
+        Vector2 newPosition = new Vector2(mti.Item2 * 32, mti.Item1 * 32);  
+        p.set_board_position(mti);
+        p.set_vector_position(newPosition);
+        return BoardTiles;
+    }
+    
     
    private partial class BoardTile : Node2D
    {

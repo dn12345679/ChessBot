@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3 uid="uid://e6rnledsxnof"]
+
+[ext_resource type="Script" path="res://Scripts/GameManager.cs" id="1_fqoao"]
+
+[node name="GameManager" type="Node2D"]
+script = ExtResource("1_fqoao")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(224, 120)
+zoom = Vector2(2, 2)

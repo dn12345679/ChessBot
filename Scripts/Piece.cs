@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Text.RegularExpressions;
 
 public partial class Piece : Node2D
@@ -17,20 +18,37 @@ public partial class Piece : Node2D
 	}
 	public enum PieceColor
 	{
-		White = 1,
-		Black = -1, 
+		White = -1,
+		Black = 1, 
 		Default = 0
 	}
 
+	public enum State
+	{
+		Unmoved = -1, // for first move logic
+		Placed = 0, // for everything else
+		Picked = 1,
+		Captured = 2
+	}
+	// board reference
+	Board board; 
 
+	// piece stats
 	private PieceType ptype = PieceType.Default;
 	private PieceColor pcolor = PieceColor.Default;
 	private Vector2 PiecePosition = Vector2.Zero;
+	
+	private Tuple<int, int> PieceIndex = new Tuple<int, int>(0, 0); // for indexing array
 
+
+	// piece state
+
+	private State pstate = State.Unmoved; // initial state 
 
 	private TextureRect image = null;
+
 	
-	public Piece(Vector2 pPos, int PieceType, int PieceColor) {
+	public Piece(Vector2 pPos, int PieceType, int PieceColor, Board chess_board) {
 		this.PiecePosition = pPos;
 
 		foreach (PieceType pval in Enum.GetValues(typeof(PieceType))) {
@@ -96,5 +114,68 @@ public partial class Piece : Node2D
 		image = sprite;
 		AddChild(sprite);
 
+	}
+
+
+	// handles the changing of piece states
+	// will handle resets, and other things related to changing piece states
+	// Argument: new_state = the state that you want to change to. 
+	public void ChangeState(State new_state) {
+		this.pstate = new_state;
+		switch (this.pstate) 
+		{
+			case State.Placed:
+				ResetState();
+				break;
+
+		}
+	}
+
+	// private helper for ChangeState()
+	// its only purpose is to cleanly reset the piece's state back to "placed"
+	private void ResetState()
+	{
+		this.pstate = State.Placed;
+		this.Scale = new Vector2(1, 1);
+		
+	}
+
+	// returns the State of the current piece
+	public State get_state() {
+		return this.pstate;
+	}
+
+	// returns the actual physics position vector of the current piece
+	public Vector2 get_vector_position() {
+		return GlobalPosition;
+	}
+
+	public void set_vector_position(Vector2 newPosition) { 
+		this.GlobalPosition = newPosition;
+		GlobalPosition = newPosition;
+	}
+
+	// returns the color of the piece
+	// 1 for white
+	// -1 for black
+	public int get_piece_color() {
+		return (int) pcolor;
+	}	
+
+	// returns the PieceType of the current piece
+	public PieceType get_piece_type() {
+		return ptype;
+	}
+
+	// methods below inteded for indexing the chessboard array only
+	// ONLY FUNTIONS if board_position is manually updated. 
+	public Tuple<int, int> get_board_position() {
+		return PieceIndex;
+	}
+
+	// IMPORTANT: manual update for the board_position index.
+	// Why is this necessary? Because I don't want to loop over to search for a piece index 
+	public void set_board_position(Tuple<int, int> new_pos) {
+		this.PieceIndex = new_pos;
 	}
 }
