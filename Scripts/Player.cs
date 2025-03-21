@@ -39,7 +39,8 @@ public partial class Player : Node2D
                      MoveManager mvm = new MoveManager(p, board);
                      valid_moves = mvm; // to get valid moves
                      mvm.get_cardinal_movement(original_position); // set all cardinal
-
+                     mvm.get_intermediate_movement(original_position);
+                     mvm.get_knight_movement(original_position);
                 }
                
             }
@@ -49,16 +50,21 @@ public partial class Player : Node2D
                 piece_picked = false; // set the piece selection to none
                 Tuple<int, int> move = board.GetIndexUnderMouse(); // contains the "move" being made, in the form (row, col)
                 bool success = false; // piece invalid until true
-                // attempt to make the move
+                // check conditions to make the move if it exists
                 if (valid_moves.get_move_list_strings().Contains(move.ToString())) {
                     
                     success = board.move_validation(selected_piece, move);
                 }
+
+                // if the move was valid, make changes on the board! and reset
                 if (success) {
-                    GD.Print("noo");
+                    selected_piece.ChangeState(Piece.State.Placed);
                     board.make_move(selected_piece, move);
-                    selected_piece = null;
                 }
+                else {
+                    selected_piece.GlobalPosition = original_position; // reset position, nothing changed
+                }
+                reset_selected_piece(); // always reset otherwise
             }
         }
         // piece being dragged?
@@ -72,6 +78,14 @@ public partial class Player : Node2D
                 selected_piece.GlobalPosition = mouse_drag;
             }
         }
+    }
+
+    // resets all references to the previously selected piece
+    // no returns
+    public void reset_selected_piece() {
+        selected_piece = null; // piece being selected
+        piece_picked = false; // boolean flag for piece selection
+        valid_moves = null; // MoveManager object, responsible for containing moves
     }
 
     /*

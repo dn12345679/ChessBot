@@ -8,7 +8,7 @@ public partial class Board : Node2D
 
     public GameManager gm;
 
-    const string DEFAULT_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    const string DEFAULT_FEN = "rnbqkbnr/pppppppp/8/8/8/8/QPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 
     public int CELL_SIZE = 32;
@@ -130,11 +130,23 @@ public partial class Board : Node2D
         return true;
     }
 
+    // Commits changes to making a move, assumes all validation was complete
+    // Validation completed in move_validation, to be checked by myself 
     public Piece[,] make_move(Piece p, Tuple<int, int> mti) {
-        Vector2 newPosition = new Vector2(mti.Item2 * 32, mti.Item1 * 32);  
-        p.set_board_position(mti);
-        p.set_vector_position(newPosition);
-        return BoardTiles;
+        Vector2 newPosition = new Vector2(mti.Item2 * 32, mti.Item1 * 32); 
+        Piece[,] old_tiles = BoardTiles; // return the old Board
+        Tuple<int, int> old_mti = p.get_board_position();
+
+        
+        p.set_board_position(mti); // updates the move tuple indices
+        p.set_vector_position(newPosition); // updates the position reference
+        BoardTiles[mti.Item1, mti.Item2] = p;
+        BoardTiles[old_mti.Item1, old_mti.Item2] = null;
+        
+        //GD.Print(BoardTiles[mti.Item1, mti.Item2]);  should be the piece you just moved
+        //GD.Print(BoardTiles[old_mti.Item1, old_mti.Item2]); should be the old piece
+
+        return BoardTiles; // returns the old board
     }
     
     

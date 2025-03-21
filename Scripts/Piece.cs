@@ -6,6 +6,13 @@ using System.Text.RegularExpressions;
 
 public partial class Piece : Node2D
 {
+	// MODDING GUIDE:
+	//	Add a PieceType to the enum
+	//	in Board.cs, change the ReadForsythEdwards() function to accomdate the new letter
+		// - also create a sprite so that it maps correctly
+	// Read the instructions in MoveManager.cs
+	// That should be all
+
 	public enum PieceType
 	{
 		Default = 0, 
@@ -27,8 +34,10 @@ public partial class Piece : Node2D
 	{
 		Unmoved = -1, // for first move logic
 		Placed = 0, // for everything else
-		Picked = 1,
-		Captured = 2
+		Picked = 1, // Idk
+		Captured = 2, // ?
+
+		Checked = 3, // Applies to King only. 
 	}
 	// board reference
 	Board board; 
@@ -140,6 +149,7 @@ public partial class Piece : Node2D
 		
 	}
 
+	// IMPORTANT: This is updated manunally in "Player.cs" when a piece is moved
 	// returns the State of the current piece
 	public State get_state() {
 		return this.pstate;
@@ -177,5 +187,9 @@ public partial class Piece : Node2D
 	// Why is this necessary? Because I don't want to loop over to search for a piece index 
 	public void set_board_position(Tuple<int, int> new_pos) {
 		this.PieceIndex = new_pos;
+	}
+
+	public override String ToString() {
+		return "ChessPiece";
 	}
 }
