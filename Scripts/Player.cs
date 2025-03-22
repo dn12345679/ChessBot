@@ -58,7 +58,9 @@ public partial class Player : Node2D
                 // if the move was valid, make changes on the board! and reset
                 if (success) {
                     selected_piece.ChangeState(Piece.State.Placed);
-                    board.make_move(selected_piece, move);
+                    selected_piece.phist = board.make_move(selected_piece, move); // assign phist
+                    //board.unmake_move(selected_piece.phist); //unmakes the move
+
                 }
                 else {
                     selected_piece.GlobalPosition = original_position; // reset position, nothing changed

@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 public partial class Board : Node2D
 {
@@ -13,7 +14,7 @@ public partial class Board : Node2D
     public static Piece White_King; // Keep track of checks 
     public static Piece Black_King; // Keep track of checks
 
-    const string DEFAULT_FEN = "rnbqkbnr/pppppppp/8/8/8/8/QPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    const string DEFAULT_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 
     public int CELL_SIZE = 32;
@@ -100,7 +101,7 @@ public partial class Board : Node2D
 
                     
                     Vector2 pvec = new Vector2(col * 32, row * 32);
-                    Piece add_piece = new Piece(pvec, type, color, this, ptype);
+                    Piece add_piece = new Piece(pvec, type, color, this, component);
                     BoardTiles[row, col] = add_piece;
                     AddChild(add_piece);
                     add_piece.set_board_position(new Tuple<int, int>(row, col)); // sets the index
@@ -127,8 +128,8 @@ public partial class Board : Node2D
 
         Vector2 pos = GetGlobalMousePosition();
 
-        int file = (int)Math.Floor(pos.X / 32);
-        int rank = (int)Math.Floor(pos.Y / 32);
+        int file = (int)Math.Floor(pos.X / CELL_SIZE);
+        int rank = (int)Math.Floor(pos.Y / CELL_SIZE);
         if (rank < 8 && rank > -1 && file < 8 && file > -1) {
             
             return new Tuple<int, int>(rank, file);
@@ -158,17 +159,42 @@ public partial class Board : Node2D
         return false; // false = invalid move, there is a pin or something
     }
 
+    /* given an input Piece.PieceColor color, return whether the King
+        associated with the color is under attack.
+    */
+    public bool is_king_threatened(Piece.PieceColor color) {
+        switch (color) {
+            case Piece.PieceColor.Black:
+                break;
+            case Piece.PieceColor.White:
+                break;
+        }
+        return false;
+    }
+
     // Commits changes to making a move, assumes all validation was complete
     // Validation completed in move_validation, to be checked by myself 
-    public Piece[,] make_move(Piece p, Tuple<int, int> mti) {
-        Vector2 newPosition = new Vector2(mti.Item2 * 32, mti.Item1 * 32); // new position to move to
-        Piece[,] old_tiles = BoardTiles; // return the old Board, UNUSED
+    
+    // Returns a PieceHistory object containing: 
+        /*
+            Piece[,] representing the OLD board unmodified
+            Tuple<int, int> representing the OLD and NEW position (to get the vector just multiply by 32)
+            Piece representing the OLD AND NEW CAPTURED PIECE (or null)
+        */
+    public PieceHistory make_move(Piece p, Tuple<int, int> mti) {
+        if (!move_validation(p, mti)) { return new PieceHistory();} // if its not valid, then just return
+        Vector2 newPosition = new Vector2(mti.Item2 * CELL_SIZE, mti.Item1 * CELL_SIZE); // new position to move to
+        
+        Tuple<int, int> oldBoardPosition = p.get_board_position(); // just multiply by CELL_SIZE for vector
+        Piece[,] old_board = BoardTiles.Clone() as Piece[,]; // return the old Board
+        Piece captured_piece = BoardTiles[mti.Item1, mti.Item2]; // null, or a piece
+        
+
         Tuple<int, int> old_mti = p.get_board_position(); // get this piece's previous position
 
         // Delete captured piece if it exists
         if (BoardTiles[mti.Item1, mti.Item2] != null) {
-            BoardTiles[mti.Item1, mti.Item2].QueueFree(); // kill it
-            BoardTiles[mti.Item1, mti.Item2] = null;        
+            captured_piece.ChangeState(Piece.State.Captured); // kill it    
         }
         
         // set the new piece on that position
@@ -178,12 +204,35 @@ public partial class Board : Node2D
         // set the n ew position to this piece on the board representation
         // null the old positions
         BoardTiles[mti.Item1, mti.Item2] = p;
-        BoardTiles[old_mti.Item1, old_mti.Item2] = null;
+        BoardTiles[old_mti.Item1, old_mti.Item2] = captured_piece;
         
         //GD.Print(BoardTiles[mti.Item1, mti.Item2]);  should be the piece you just moved
         //GD.Print(BoardTiles[old_mti.Item1, old_mti.Item2]); should be the old piece
 
-        return BoardTiles; // returns the old board
+        return new PieceHistory(old_board, p, captured_piece, oldBoardPosition, mti); // returns the old board
+    }
+
+    // Given an input PieceHistory object (see implementation in Piece.cs
+    // unmakes the previous move recorded in phist
+    // ONLY INTENDED FOR BOT and other cool things, no undo move in real game
+
+    public void unmake_move(PieceHistory phist) {
+        Piece[,] history_board = phist.get_board();
+        Piece pold = phist.get_piece();
+        Piece cold = phist.get_capture();
+        Tuple<int, int> pidx = phist.get_piece_index();
+        Tuple<int, int> cidx = phist.get_cold_index();
+
+        if (cold != null) {
+            cold.ChangeState(Piece.State.Placed); // add the piece back
+        }
+        
+        pold.set_board_position(pidx);
+        Vector2 vectorposition = new Vector2(pidx.Item2 * CELL_SIZE, pidx.Item1 * CELL_SIZE);
+        pold.set_vector_position(vectorposition);
+
+        BoardTiles = history_board;
+
     }
     
     

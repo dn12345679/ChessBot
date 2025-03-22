@@ -50,9 +50,11 @@ public partial class Piece : Node2D
 	private PieceColor pcolor = PieceColor.Default;
 	private Vector2 PiecePosition = Vector2.Zero; // set in Board.cs
 	
+	public PieceHistory phist = new PieceHistory(); // for move rollback
+
 	private Tuple<int, int> PieceIndex = new Tuple<int, int>(0, 0); // for indexing array, in format
 
-
+	private bool is_threatened = false; // for king checks, but also convenient for any other logic
 	// piece state
 
 	private State pstate = State.Unmoved; // initial state 
@@ -75,10 +77,12 @@ public partial class Piece : Node2D
 		this.rep = rep;
 	}
 
+
 	// check if an enemy rook, queen is targetting horizontally/vertically
 	// and likewise for bishop, queen is targetting diagonally
 	// Returns true if there is a pin on Piece p, otherwise returns false
-	// sorry future me for the nested conditions
+	// sorry future me for the nested conditions, its the best i could do
+	// IMPORTANT: must modify if you are adding new pieces
 	public Tuple<bool, Piece> is_pinned(Piece p) {
 
 		// not even a piece, success
@@ -93,6 +97,7 @@ public partial class Piece : Node2D
 		if (distX != 0 && distY != 0 && Math.Abs(distX) != Math.Abs(distY)) 
 		{
 			// not plausible, success
+			
 			return new Tuple<bool, Piece>(false, null);
 		}
 		// valid, get the direction
@@ -105,7 +110,7 @@ public partial class Piece : Node2D
 			if (Move.tuple_in_bounds(pos)) {
 				Piece currpiece = board.BoardTiles[pos.Item1, pos.Item2];
 				if (currpiece != null ) {
-					// valid piece found
+					// valid piece found in the direction of the king, but it wasnt the king
 					if (currpiece.get_piece_type() != Piece.PieceType.King) {
 						// no king pin, success
 						return new Tuple<bool, Piece>(false, null); // not a king, no possible way of pinning in the direction to the king
@@ -117,26 +122,29 @@ public partial class Piece : Node2D
 						{
 							pos = new Tuple<int, int>(pos.Item1 - distY, pos.Item2 - distX);
 							if (Move.tuple_in_bounds(pos)) {
+								// currpiece is the current piece being iterated over, or null
 								currpiece = board.BoardTiles[pos.Item1, pos.Item2];
-								if (currpiece != null ) {
+								if (currpiece != null && currpiece.get_state() != Piece.State.Captured) {
 									// valid piece found
 									if (currpiece.get_piece_color() == p.get_piece_color()) {
 										// no pin due to skin color, success
 										return new Tuple<bool, Piece>(false, null); // not an opp, no possible way of pinning in the direction to the king
 									}
 									else {
-										// pin exists, failure possible
 										if (Math.Abs(distX) == Math.Abs(distY)) {
 											if (currpiece.get_piece_type() == Piece.PieceType.Queen 
 												|| currpiece.get_piece_type() == Piece.PieceType.Bishop) {
 													return new Tuple<bool, Piece>(true, currpiece);
 												}
+											break;
 										}
 										else {
+											
 											if (currpiece.get_piece_type() == Piece.PieceType.Queen 
 												|| currpiece.get_piece_type() == Piece.PieceType.Rook) {
 													return new Tuple<bool, Piece>(true, currpiece);
 												}
+											break;
 										}
 									}
 								}
@@ -260,7 +268,9 @@ public partial class Piece : Node2D
 			case State.Placed:
 				ResetState();
 				break;
-
+			case State.Captured:
+				Visible = false;
+				break;
 		}
 	}
 
@@ -270,7 +280,7 @@ public partial class Piece : Node2D
 	{
 		this.pstate = State.Placed;
 		this.Scale = new Vector2(1, 1);
-		
+		this.Visible = true; // uncapture if captured
 	}
 
 	// IMPORTANT: This is updated manunally in "Player.cs" when a piece is moved
@@ -315,5 +325,45 @@ public partial class Piece : Node2D
 
 	public override String ToString() {
 		return rep + " piece";
+	}
+}
+
+// Represents the move history of a piece
+// Records the last Move and capture made by a piece
+public partial class PieceHistory {
+
+	Piece[,] board;
+	Piece p, c;
+	Tuple<int, int> pold, cold;
+
+
+	public PieceHistory() {
+		
+	}
+	public PieceHistory(Piece[,] board, Piece p, Piece c, Tuple<int, int> pold, Tuple<int, int> cold) {
+		this.board = board;
+		this.p = p;
+		this.c = c;
+		this.pold = pold;
+		this.cold = cold;
+	}
+
+	public Piece[,] get_board() {
+		return board;
+	}
+
+	public Piece get_piece() {
+		return p;
+	}
+	public Piece get_capture() {
+		return c;
+	}
+
+	public Tuple<int, int> get_piece_index() {
+		return pold;
+	}
+
+	public Tuple<int, int> get_cold_index() {
+		return cold;
 	}
 }
