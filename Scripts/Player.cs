@@ -34,7 +34,6 @@ public partial class Player : Node2D
                      selected_piece = p; 
                      piece_picked = true; // th ere is a piece being selected
                      original_position = p.GlobalPosition;
-
                      // TODO: CLEAN THIS UP 
                      MoveManager mvm = new MoveManager(p, board);
                      valid_moves = mvm; // to get valid moves
@@ -44,7 +43,7 @@ public partial class Player : Node2D
                 }
                
             }
-            // check if move was valid
+            // check if move was valid after dropping it. Drag condition is in the else block below
             else if (!mouseClicked.Pressed && mouseClicked.ButtonIndex == MouseButton.Left && piece_picked == true) {
                 //GD.Print(get_piece_under_mouse() + "undermouse");
                 piece_picked = false; // set the piece selection to none

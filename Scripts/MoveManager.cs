@@ -104,8 +104,9 @@ public partial class MoveManager : Node2D {
                         Tuple<Move, int> sq_move_default = move_default.move_if_valid(current_position + directions[dir] * board.CELL_SIZE * tile);
                         // early breaks prevent extra iterations
                         if(sq_move_default == null) {
-                            break;
+                            break;    
                         }
+                        
                         moves.Add(sq_move_default.Item1); // valid move
                         
                         // Since King can only move 1 square, break early
@@ -242,30 +243,28 @@ public partial class Move : Node2D {
     // How do the indices work?
     //  --> Item2 first since its the "y" axis, but in a 2d array its the row array
     //  --> Item1 second since its the "x" axis, but in a 2d array its an index in the row array
-    public Tuple<Move, int> move_if_valid(Vector2 physical_position = new Vector2()) { 
-        
-        // checks
-        if (physical_position != new Vector2() ) {
-            // move_position is a tuple containing the indexing positions of a move check
-            Tuple<int, int> move_position = new Tuple<int, int>((int)physical_position.X / 32, (int)physical_position.Y / 32);
-            
-            
-            // index check, then null check and same color check 
-            if (tuple_in_bounds(move_position)) {
-                // case 1: no piece there, keep going
-                if (board.BoardTiles[move_position.Item2, move_position.Item1] == null) {
-                    this.move_position = move_position; // update this move object to containt the valid move
-                    return new Tuple<Move, int>(this, (int) Piece.PieceColor.Default);
-                }
-                // case 2: opposite color piece (break iteration here, handled by "get_xxx_movement()")
-                else if(board.BoardTiles[move_position.Item2, move_position.Item1].get_piece_color() != piece.get_piece_color()) {
-                    this.move_position = move_position; // update this move object to containt the valid move
-                    return new Tuple<Move, int>(this, board.BoardTiles[move_position.Item2, move_position.Item1].get_piece_color());                    
-                }
-                
-            }
+    public Tuple<Move, int> move_if_valid(Vector2 physical_position) { 
 
+        // move_position is a tuple containing the indexing positions of a move check
+        Tuple<int, int> move_position = new Tuple<int, int>((int)physical_position.X / 32, (int)physical_position.Y / 32);
+        
+        
+        // index check, then null check and same color check 
+        if (tuple_in_bounds(move_position)) {
+            
+            // case 1: no piece there, keep going
+            if (board.BoardTiles[move_position.Item2, move_position.Item1] == null) {
+                this.move_position = move_position; // update this move object to containt the valid move
+                return new Tuple<Move, int>(this, (int) Piece.PieceColor.Default);
+            }
+            // case 2: opposite color piece (break iteration here, handled by "get_xxx_movement()")
+            else if(board.BoardTiles[move_position.Item2, move_position.Item1].get_piece_color() != piece.get_piece_color()) {
+                this.move_position = move_position; // update this move object to containt the valid move
+                return new Tuple<Move, int>(this, board.BoardTiles[move_position.Item2, move_position.Item1].get_piece_color());                    
+            }
+            
         }
+        
         return null;
     }
 
@@ -273,7 +272,9 @@ public partial class Move : Node2D {
     // - Item1 = physical X position (file)
     // - Item2 = physical Y position (rank)
     // Return whether it is in bounds
-    public bool tuple_in_bounds(Tuple<int, int> index_position) {
+
+    // static since I need it outside of instantiation
+    public static bool tuple_in_bounds(Tuple<int, int> index_position) {
         return index_position.Item1 < 8 && index_position.Item1 > -1 && 
                 index_position.Item2 < 8 && index_position.Item2 > -1;
     }

@@ -1,5 +1,7 @@
 using Godot;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -10,6 +12,7 @@ public partial class Piece : Node2D
 	//	Add a PieceType to the enum
 	//	in Board.cs, change the ReadForsythEdwards() function to accomdate the new letter
 		// - also create a sprite so that it maps correctly
+		// - also adjust here: functions related to is_pinned(), like get_enemies()
 	// Read the instructions in MoveManager.cs
 	// That should be all
 
@@ -40,14 +43,14 @@ public partial class Piece : Node2D
 		Checked = 3, // Applies to King only. 
 	}
 	// board reference
-	Board board; 
+	Board board; // important for checks and pins
 
 	// piece stats
 	private PieceType ptype = PieceType.Default;
 	private PieceColor pcolor = PieceColor.Default;
-	private Vector2 PiecePosition = Vector2.Zero;
+	private Vector2 PiecePosition = Vector2.Zero; // set in Board.cs
 	
-	private Tuple<int, int> PieceIndex = new Tuple<int, int>(0, 0); // for indexing array
+	private Tuple<int, int> PieceIndex = new Tuple<int, int>(0, 0); // for indexing array, in format
 
 
 	// piece state
@@ -55,9 +58,9 @@ public partial class Piece : Node2D
 	private State pstate = State.Unmoved; // initial state 
 
 	private TextureRect image = null;
-
+	public char rep = '_';
 	
-	public Piece(Vector2 pPos, int PieceType, int PieceColor, Board chess_board) {
+	public Piece(Vector2 pPos, int PieceType, int PieceColor, Board chess_board, char rep) {
 		this.PiecePosition = pPos;
 
 		foreach (PieceType pval in Enum.GetValues(typeof(PieceType))) {
@@ -68,7 +71,128 @@ public partial class Piece : Node2D
 		pcolor = PieceColor == 1 ? Piece.PieceColor.White : Piece.PieceColor.Black;
 		SetIcon(); // adds images to the piece
 		GlobalPosition = pPos;
+		board = chess_board;
+		this.rep = rep;
 	}
+
+	// check if an enemy rook, queen is targetting horizontally/vertically
+	// and likewise for bishop, queen is targetting diagonally
+	// Returns true if there is a pin on Piece p, otherwise returns false
+	// sorry future me for the nested conditions
+	public Tuple<bool, Piece> is_pinned(Piece p) {
+
+		// not even a piece, success
+		if (p == null) {return new Tuple<bool, Piece>(false, null);}
+		// set the king reference to the respective color
+		Piece king = (p.get_piece_color() == (int) Piece.PieceColor.White) ? Board.White_King : Board.Black_King;
+
+		// feasibility check
+		int distX = king.get_board_position().Item2 - p.get_board_position().Item2;
+		int distY = king.get_board_position().Item1 - p.get_board_position().Item1;
+		// not same row, not same column, not same diagonal. Break early
+		if (distX != 0 && distY != 0 && Math.Abs(distX) != Math.Abs(distY)) 
+		{
+			// not plausible, success
+			return new Tuple<bool, Piece>(false, null);
+		}
+		// valid, get the direction
+		if (distX != 0) { distX /= Math.Abs(distX);}
+		if (distY != 0) { distY /= Math.Abs(distY);}
+
+		Tuple<int, int> pos = p.get_board_position();
+		for (int i = 0; i < 8; i++) {
+			pos = new Tuple<int, int>(pos.Item1 + distY, pos.Item2 + distX);
+			if (Move.tuple_in_bounds(pos)) {
+				Piece currpiece = board.BoardTiles[pos.Item1, pos.Item2];
+				if (currpiece != null ) {
+					// valid piece found
+					if (currpiece.get_piece_type() != Piece.PieceType.King) {
+						// no king pin, success
+						return new Tuple<bool, Piece>(false, null); // not a king, no possible way of pinning in the direction to the king
+					}
+					else{
+						// trace in opposite direction
+						pos = p.get_board_position(); // reset the position
+						for (int j = 0; j < 8; j++) 
+						{
+							pos = new Tuple<int, int>(pos.Item1 - distY, pos.Item2 - distX);
+							if (Move.tuple_in_bounds(pos)) {
+								currpiece = board.BoardTiles[pos.Item1, pos.Item2];
+								if (currpiece != null ) {
+									// valid piece found
+									if (currpiece.get_piece_color() == p.get_piece_color()) {
+										// no pin due to skin color, success
+										return new Tuple<bool, Piece>(false, null); // not an opp, no possible way of pinning in the direction to the king
+									}
+									else {
+										// pin exists, failure possible
+										if (Math.Abs(distX) == Math.Abs(distY)) {
+											if (currpiece.get_piece_type() == Piece.PieceType.Queen 
+												|| currpiece.get_piece_type() == Piece.PieceType.Bishop) {
+													return new Tuple<bool, Piece>(true, currpiece);
+												}
+										}
+										else {
+											if (currpiece.get_piece_type() == Piece.PieceType.Queen 
+												|| currpiece.get_piece_type() == Piece.PieceType.Rook) {
+													return new Tuple<bool, Piece>(true, currpiece);
+												}
+										}
+									}
+								}
+							}
+						}
+					}
+
+				}
+			}
+			else {
+				// out of bounds, exist loop, return false by default
+				break;
+			}
+
+		}
+
+		// no pin, success
+		return new Tuple<bool, Piece>(false, null);
+	}
+
+	// Returns a List of Tuples, where each Tuple has
+	/*
+	    - Item1: Piece, the piece node itself
+		- Item2: Tuple<int, int>, containing the Rank, File of said piece
+	*/
+	// in relation to the origin position (unrelated to piece type)
+	public List<Tuple<Piece, Tuple<int, int>>> get_enemies(Vector2 origin, PieceType pieceType) {
+		List<Tuple<Piece, Tuple<int,int>>> enemies = new List<Tuple<Piece, Tuple<int, int>>>();
+		Vector2[] directions = new Vector2[16] {
+					// horizontal/vertical
+					new Vector2(0, -1), 
+					new Vector2(1, 0), 
+					new Vector2(0, 1), 
+					new Vector2(-1, 0), 
+
+					// diagonal
+					new Vector2(-1, -1), 
+					new Vector2(1, 1), 
+					new Vector2(-1, 1), 
+					new Vector2(1, -1), 
+
+					new Vector2(2, 1),  new Vector2(2, -1),  // Right-Up, Right-Down
+					new Vector2(-2, 1), new Vector2(-2, -1), // Left-Up, Left-Down
+					new Vector2(1, 2),  new Vector2(1, -2),  // Up-Right, Down-Right
+					new Vector2(-1, 2), new Vector2(-1, -2)  // Up-Left, Down-Left 
+		};
+		foreach(Vector2 dir in directions) {
+			for (int iter = 0; iter < 8; iter++) {
+				 
+			}
+		}
+	    
+
+		return enemies;
+	} 
+
 
 	/*
 	Part of the initialization process of a Piece
@@ -190,6 +314,6 @@ public partial class Piece : Node2D
 	}
 
 	public override String ToString() {
-		return "ChessPiece";
+		return rep + " piece";
 	}
 }
