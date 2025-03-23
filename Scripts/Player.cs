@@ -59,9 +59,15 @@ public partial class Player : Node2D
                 // if the move was valid, make changes on the board! and reset
                 if (success) {
                     selected_piece.ChangeState(Piece.State.Placed);
-                    selected_piece.phist = board.make_move(selected_piece, move); // assign phist
+                    
+                    selected_piece.phist = board.make_move(selected_piece, move); // assign phist MOVE IS MADE HERE
+                    
+                    // Check if the King is under attack
+                    if (board.is_checked((Piece.PieceColor) selected_piece.get_piece_color(), board.BoardTiles) == true) {
+                        board.unmake_move(selected_piece.phist);
+                    }
+
                     board.temp_label.Text = board.ToString();
-                    //board.unmake_move(selected_piece.phist); //unmakes the move
 
                 }
                 else {

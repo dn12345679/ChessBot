@@ -4,12 +4,3 @@
 
 [node name="Board" type="Node2D"]
 script = ExtResource("1_ngo2a")
-
-[node name="Label" type="Label" parent="."]
-offset_left = 760.0
-offset_top = 56.0
-offset_right = 1144.0
-offset_bottom = 400.0
-pivot_offset = Vector2(-904, 160)
-text = "	 test"
-autowrap_mode = 3

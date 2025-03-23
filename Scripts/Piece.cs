@@ -170,40 +170,73 @@ public partial class Piece : Node2D
 		return new Tuple<bool, Piece>(false, null);
 	}
 
-	// Returns a List of Tuples, where each Tuple has
-	/*
-	    - Item1: Piece, the piece node itself
-		- Item2: Tuple<int, int>, containing the Rank, File of said piece
-	*/
+	// Returns a List of threats (Pieces) in all possible directions
 	// in relation to the origin position (unrelated to piece type)
-	public List<Tuple<Piece, Tuple<int, int>>> get_enemies(Vector2 origin, PieceType pieceType) {
-		List<Tuple<Piece, Tuple<int,int>>> enemies = new List<Tuple<Piece, Tuple<int, int>>>();
-		Vector2[] directions = new Vector2[16] {
-					// horizontal/vertical
-					new Vector2(0, -1), 
-					new Vector2(1, 0), 
-					new Vector2(0, 1), 
-					new Vector2(-1, 0), 
+	public List<Piece> get_threats(Tuple<int, int> origin, Piece[,] board) {
+		List<Piece> threats = new List<Piece>();
 
-					// diagonal
-					new Vector2(-1, -1), 
-					new Vector2(1, 1), 
-					new Vector2(-1, 1), 
-					new Vector2(1, -1), 
+        Tuple<int, int>[] directions = new Tuple<int, int>[16] {
+            new Tuple<int, int>(0, -1), new Tuple<int, int>(1, 0), new Tuple<int, int>(0, 1), new Tuple<int, int>(-1, 0),   // Horizontal/Vertical
+            new Tuple<int, int>(-1, -1), new Tuple<int, int>(1, 1), new Tuple<int, int>(-1, 1), new Tuple<int, int>(1, -1),   // Diagonal
+            new Tuple<int, int>(2, 1), new Tuple<int, int>(2, -1), new Tuple<int, int>(-2, 1), new Tuple<int, int>(-2, -1),  // Knight moves
+            new Tuple<int, int>(1, 2), new Tuple<int, int>(1, -2), new Tuple<int, int>(-1, 2), new Tuple<int, int>(-1, -2)   // knight moves
+        };
 
-					new Vector2(2, 1),  new Vector2(2, -1),  // Right-Up, Right-Down
-					new Vector2(-2, 1), new Vector2(-2, -1), // Left-Up, Left-Down
-					new Vector2(1, 2),  new Vector2(1, -2),  // Up-Right, Down-Right
-					new Vector2(-1, 2), new Vector2(-1, -2)  // Up-Left, Down-Left 
-		};
-		foreach(Vector2 dir in directions) {
-			for (int iter = 0; iter < 8; iter++) {
-				 
+		for (int dir = 0; dir < directions.Length; dir++) {
+			for (int tile = 1; tile < 8; tile++) {
+				if (!Move.tuple_in_bounds(new Tuple<int, int>(origin.Item1 + directions[dir].Item1 * tile, origin.Item2 + directions[dir].Item2 * tile))) {continue;} // skip out of bounds
+				Piece p = board[origin.Item1 + directions[dir].Item1 * tile, origin.Item2 + directions[dir].Item2 * tile];
+
+				// valid enemy piece if its not null, opposite color, and not captured
+				if (p != null && p.get_state() != State.Captured) {
+					if (p.get_piece_color() != get_piece_color()) {
+						switch (p.get_piece_type()) {
+							case Piece.PieceType.Rook:
+							    if (dir < 4) {
+									threats.Add(p);
+								} // ONLY add if its a horizontal or vertical
+								break;
+							case Piece.PieceType.Pawn:
+								if (p.get_piece_color() == (int) Piece.PieceColor.White && directions[dir].Item2 == 1 && tile == 1) {
+									// White pawns attack diagonally upward
+									threats.Add(p);
+								}
+								else if (p.get_piece_color() == (int) Piece.PieceColor.Black && directions[dir].Item2 == -1 && tile == 1) {
+									// Black pawns attack diagonally downward
+									threats.Add(p);
+								}
+								break;
+							case Piece.PieceType.Bishop:
+								if (dir >= 4 && dir <= 7) {
+									threats.Add(p);
+								}
+								break;
+							case Piece.PieceType.Queen:
+								if (dir <= 7) {
+									threats.Add(p);
+								}
+								break;
+							case Piece.PieceType.Knight:
+								if (dir >= 8) {
+									if  (tile == 1) {
+										threats.Add(p);
+									}
+								}
+								break;
+						}
+					}
+					if (p.get_piece_color() == get_piece_color()) {
+						break; // blocked threat, break here
+					}
+
+				}
+
 			}
+
 		}
 	    
 
-		return enemies;
+		return threats;
 	} 
 
 

@@ -34,6 +34,8 @@ public partial class Board : Node2D
 
         GD.Print(temp_label.Text + "ddd");
     }
+
+    // Constructor
     public Board() {
 
 
@@ -61,6 +63,7 @@ public partial class Board : Node2D
 
     /*
     Assumes standard FEN notation, separated by a / symbol
+    modify if you adding a new piece or osmething
     */
     private void ReadForsythEdwards(String FEN) {
 
@@ -161,6 +164,20 @@ public partial class Board : Node2D
     // returns false if the move is invalid
     // IMPORTANT NOTE: the mti parameter is in the format (column, row) not (row, column)
     // p.is_pinned(p).Item2.get_board_position() IS ALSO in (column, row)
+
+    /*
+        Cases for validity:
+            - Piece moving does not expose the king
+            - Piece moving can expose the king, but moves in a way that doesn't
+            - If King is in check, move MUST resolve the check by moving such that:
+                - The vector between the new position and the attacking piece is parallel to
+                    the vector between the king and the attacking piece, AND the magnitude of the vectur
+                    between the new position and the attacking piece is SMALLER than the magnitude of the 
+                    vector between the king position and the attacking piece
+            - Or:
+                - Check if the 16 possible directions contain an enemy piece that can capture AFTER making the move
+                
+    */
     public bool move_validation(Piece p, Tuple<int, int> mti) {
         // TODO:
         // validation:
@@ -194,15 +211,18 @@ public partial class Board : Node2D
         return false; // false = invalid move, there is a pin or something
     }
 
-    /* given an input Piece.PieceColor color, return whether the King
+    /* 
+        TODO: finish this
+        given an input Piece.PieceColor color, return whether the King
         associated with the color is under attack.
     */
-    public bool is_king_threatened(Piece.PieceColor color) {
+    public bool is_checked(Piece.PieceColor color, Piece[,] board) {
+
         switch (color) {
             case Piece.PieceColor.Black:
-                break;
+                return Black_King.get_threats(Black_King.get_board_position(), board).Count > 0;
             case Piece.PieceColor.White:
-                break;
+                return White_King.get_threats(White_King.get_board_position(), board).Count > 0;
         }
         return false;
     }
@@ -292,6 +312,10 @@ public partial class Board : Node2D
         return return_string;
     }
 
+    /*
+        Class representing the Board Tiles. 
+        Does not contain anything relevant to the Chess pieces, only for visual decoration
+    */    
     private partial class BoardTile : Node2D
    {
         private Vector2 tPosition;
