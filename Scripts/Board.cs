@@ -17,8 +17,26 @@ public partial class Board : Node2D
     const string DEFAULT_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 
+    public Label temp_label;
+
     public int CELL_SIZE = 32;
+    public override void _Ready()
+    {
+        base._Ready();
+        Label newLabel = new Label();
+        AddChild(newLabel);
+        newLabel.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        
+        newLabel.Position = new Vector2(300, 0);
+        newLabel.Size = new Vector2(121, 121); 
+        newLabel.Text = "dfasdf ";
+        temp_label = newLabel;
+
+        GD.Print(temp_label.Text + "ddd");
+    }
     public Board() {
+
+
         BoardTiles = new Piece[8,8];
         CreateBoard(); // tiles
         ReadForsythEdwards(DEFAULT_FEN); // pieces
@@ -138,6 +156,7 @@ public partial class Board : Node2D
     
     }
 
+    // DOES NOT HANDLE IF THE MOVE IS POSSIBLE. Seee Player.cs for full implementation
     // returns true if the move is valid
     // returns false if the move is invalid
     // IMPORTANT NOTE: the mti parameter is in the format (column, row) not (row, column)
@@ -148,14 +167,30 @@ public partial class Board : Node2D
             // move does not land on a same color piece
             // move does not open up weakness to King (same color)
 
-        // if the move can capture the pinning piece
+        // if the move can capture or move in the same direction as the pinning piece, 
+        // , then it can still be valid!!!
         if (p.is_pinned(p).Item1 == true) {
-            Tuple<int, int> pin_tuple = p.is_pinned(p).Item2.get_board_position();
-            return pin_tuple.Item2 == mti.Item2 && pin_tuple.Item1 == mti.Item1;
+            // Item2 not null here by the nature that Item1 is true (check Piece.cs)
+            Tuple<int, int> pin_tuple = p.is_pinned(p).Item2.get_board_position(); // Item2 is the pinning piece
+
+            // Linear algebra time:
+               // the vector between point "pinner" and "pinned" is elementwise vector subtraction
+            Vector2 dir2pin = new Vector2(pin_tuple.Item1 - mti.Item1, pin_tuple.Item2 - mti.Item2); 
+
+                // also want vector between king and the pinned piece
+            Tuple<int, int> king = (p.get_piece_color() == (int) Piece.PieceColor.White) ? Board.White_King.get_board_position() : Board.Black_King.get_board_position();
+            Vector2 dir2king = new Vector2(pin_tuple.Item1 - king.Item1, pin_tuple.Item2 - king.Item2);
+
+                // 2 vectors are parallel if arc cosine of v1 dot v2 is equal to abs(v1 dot v2)
+                // EASY: if their cross produoct v1 X v2 is 0
+
+            // then return if their angle is 0 (cross prod). If so, then the move was valid
+            return dir2pin.AngleTo(dir2king) == 0;
             }
         // if the piece is not pinned by a pinning piece
-        if (p.is_pinned(p).Item1 == false) { return true; } // successful move
-        
+        if (p.is_pinned(p).Item1 == false) { 
+            return true; 
+            } // successful move
         return false; // false = invalid move, there is a pin or something
     }
 
@@ -235,8 +270,29 @@ public partial class Board : Node2D
 
     }
     
-    
-   private partial class BoardTile : Node2D
+
+    // Returns the string representation of the Chess Board
+    // Piece.cs contains the String representation for each piece
+    public override string ToString()
+    {
+
+        string return_string = "[";
+        for (int y = 0; y < BoardTiles.GetLength(0); y++)
+        {
+            string row = "";
+            for (int x = 0; x < BoardTiles.GetLength(1); x++)
+            {
+                row += BoardTiles[y, x]?.ToString() ?? ".";
+                row += " ";
+            }
+            return_string += row; // Print each row
+        }
+
+
+        return return_string;
+    }
+
+    private partial class BoardTile : Node2D
    {
         private Vector2 tPosition;
         private Color tColor;

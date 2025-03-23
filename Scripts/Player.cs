@@ -50,22 +50,24 @@ public partial class Player : Node2D
                 Tuple<int, int> move = board.GetIndexUnderMouse(); // contains the "move" being made, in the form (row, col)
                 bool success = false; // piece invalid until true
                 // check conditions to make the move if it exists
+                // MOVE must exist for move_validation to even run (see Board.cs)
                 if (valid_moves.get_move_list_strings().Contains(move.ToString())) {
-                    
                     success = board.move_validation(selected_piece, move);
+                    
                 }
 
                 // if the move was valid, make changes on the board! and reset
                 if (success) {
                     selected_piece.ChangeState(Piece.State.Placed);
                     selected_piece.phist = board.make_move(selected_piece, move); // assign phist
+                    board.temp_label.Text = board.ToString();
                     //board.unmake_move(selected_piece.phist); //unmakes the move
 
                 }
                 else {
                     selected_piece.GlobalPosition = original_position; // reset position, nothing changed
                 }
-                reset_selected_piece(); // always reset otherwise
+                reset_selected_piece(); // always reset otherwise, invalid move
             }
         }
         // piece being dragged?

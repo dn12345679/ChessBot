@@ -252,15 +252,17 @@ public partial class Move : Node2D {
         // index check, then null check and same color check 
         if (tuple_in_bounds(move_position)) {
             
-            // case 1: no piece there, keep going
-            if (board.BoardTiles[move_position.Item2, move_position.Item1] == null) {
+            Piece piece_to = board.BoardTiles[move_position.Item2, move_position.Item1];
+            // case 1: no piece there, keep going, OR piece that was ALREADY CAPTURED is there
+            if (piece_to == null || piece_to.get_state() == Piece.State.Captured) {
                 this.move_position = move_position; // update this move object to containt the valid move
                 return new Tuple<Move, int>(this, (int) Piece.PieceColor.Default);
             }
-            // case 2: opposite color piece (break iteration here, handled by "get_xxx_movement()")
-            else if(board.BoardTiles[move_position.Item2, move_position.Item1].get_piece_color() != piece.get_piece_color()) {
+            // case 2: opposite color piece
+            // (break iteration here, handled by "get_xxx_movement()")
+            else if(piece_to.get_piece_color() != piece.get_piece_color()) {
                 this.move_position = move_position; // update this move object to containt the valid move
-                return new Tuple<Move, int>(this, board.BoardTiles[move_position.Item2, move_position.Item1].get_piece_color());                    
+                return new Tuple<Move, int>(this, piece_to.get_piece_color());                    
             }
             
         }

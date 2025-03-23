@@ -97,7 +97,6 @@ public partial class Piece : Node2D
 		if (distX != 0 && distY != 0 && Math.Abs(distX) != Math.Abs(distY)) 
 		{
 			// not plausible, success
-			
 			return new Tuple<bool, Piece>(false, null);
 		}
 		// valid, get the direction
@@ -111,8 +110,12 @@ public partial class Piece : Node2D
 				Piece currpiece = board.BoardTiles[pos.Item1, pos.Item2];
 				if (currpiece != null ) {
 					// valid piece found in the direction of the king, but it wasnt the king
-					if (currpiece.get_piece_type() != Piece.PieceType.King) {
+					/* AND the piece is not in the captured state: NOTE that captured state means 
+						it is still in the plane of existence, but ceases to interact with other pieces
+					*/
+					if (currpiece.get_piece_type() != Piece.PieceType.King && currpiece.get_state() != Piece.State.Captured) {
 						// no king pin, success
+						
 						return new Tuple<bool, Piece>(false, null); // not a king, no possible way of pinning in the direction to the king
 					}
 					else{
@@ -134,6 +137,7 @@ public partial class Piece : Node2D
 										if (Math.Abs(distX) == Math.Abs(distY)) {
 											if (currpiece.get_piece_type() == Piece.PieceType.Queen 
 												|| currpiece.get_piece_type() == Piece.PieceType.Bishop) {
+													
 													return new Tuple<bool, Piece>(true, currpiece);
 												}
 											break;
@@ -142,6 +146,7 @@ public partial class Piece : Node2D
 											
 											if (currpiece.get_piece_type() == Piece.PieceType.Queen 
 												|| currpiece.get_piece_type() == Piece.PieceType.Rook) {
+													
 													return new Tuple<bool, Piece>(true, currpiece);
 												}
 											break;
@@ -324,7 +329,7 @@ public partial class Piece : Node2D
 	}
 
 	public override String ToString() {
-		return rep + " piece";
+		return rep + "";
 	}
 }
 
