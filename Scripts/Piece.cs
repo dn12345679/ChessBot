@@ -209,7 +209,6 @@ public partial class Piece : Node2D
 										threats.Add(p);
 									}
 								}
-
 								break;
 							case Piece.PieceType.Bishop:
 								if (dir >= 4 && dir <= 7) {
@@ -230,6 +229,8 @@ public partial class Piece : Node2D
 								}
 								break;
 						}
+
+						break; // ONLY remove if you plan to allow pieces to go through same color 
 					}
 					if (p.get_piece_color() == get_piece_color()) {
 						break; // blocked threat, break here
