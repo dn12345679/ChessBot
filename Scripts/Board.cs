@@ -32,7 +32,6 @@ public partial class Board : Node2D
         newLabel.Text = "dfasdf ";
         temp_label = newLabel;
 
-        GD.Print(temp_label.Text + "ddd");
     }
 
     // Constructor
@@ -220,6 +219,7 @@ public partial class Board : Node2D
 
         switch (color) {
             case Piece.PieceColor.Black:
+                
                 return Black_King.get_threats(Black_King.get_board_position(), board).Count > 0;
             case Piece.PieceColor.White:
                 return White_King.get_threats(White_King.get_board_position(), board).Count > 0;

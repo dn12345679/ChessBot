@@ -197,14 +197,19 @@ public partial class Piece : Node2D
 								} // ONLY add if its a horizontal or vertical
 								break;
 							case Piece.PieceType.Pawn:
-								if (p.get_piece_color() == (int) Piece.PieceColor.White && directions[dir].Item2 == 1 && tile == 1) {
-									// White pawns attack diagonally upward
-									threats.Add(p);
+								if (dir >= 4 && dir <= 7) {
+									if (p.get_piece_color() == (int) Piece.PieceColor.White && directions[dir].Item2 == 1 && tile == 1) {
+										// White pawns attack diagonally upward
+										
+										threats.Add(p);
+									}
+									else if (p.get_piece_color() == (int) Piece.PieceColor.Black && directions[dir].Item2 == -1 && tile == 1) {
+										// Black pawns attack diagonally downward
+										
+										threats.Add(p);
+									}
 								}
-								else if (p.get_piece_color() == (int) Piece.PieceColor.Black && directions[dir].Item2 == -1 && tile == 1) {
-									// Black pawns attack diagonally downward
-									threats.Add(p);
-								}
+
 								break;
 							case Piece.PieceType.Bishop:
 								if (dir >= 4 && dir <= 7) {
@@ -215,6 +220,7 @@ public partial class Piece : Node2D
 								if (dir <= 7) {
 									threats.Add(p);
 								}
+								
 								break;
 							case Piece.PieceType.Knight:
 								if (dir >= 8) {

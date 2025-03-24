@@ -55,6 +55,9 @@ public partial class Player : Node2D
                     success = board.move_validation(selected_piece, move);
                     
                 }
+                else{
+                    GD.Print("failed, move doesnt exist");
+                }
 
                 // if the move was valid, make changes on the board! and reset
                 if (success) {
@@ -64,7 +67,12 @@ public partial class Player : Node2D
                     
                     // Check if the King is under attack
                     if (board.is_checked((Piece.PieceColor) selected_piece.get_piece_color(), board.BoardTiles) == true) {
+                        GD.Print("failed, king in check");
+                        foreach(Piece p in Board.White_King.get_threats(Board.White_King.get_board_position(), board.BoardTiles)) {
+                            GD.Print(p);
+                        }
                         board.unmake_move(selected_piece.phist);
+
                     }
 
                     board.temp_label.Text = board.ToString();
@@ -72,6 +80,7 @@ public partial class Player : Node2D
                 }
                 else {
                     selected_piece.GlobalPosition = original_position; // reset position, nothing changed
+                    GD.Print("failed, move invalid");
                 }
                 reset_selected_piece(); // always reset otherwise, invalid move
             }
