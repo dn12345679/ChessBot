@@ -523,11 +523,14 @@ public partial class Board : Node2D
         Piece[,] old_board = BoardTiles.Clone() as Piece[,]; // return the old Board
         Piece captured_piece = BoardTiles[mti.Item1, mti.Item2]; // null, or a piece
         
+        bool c_already_captured = false; // for scenarios where "unmakes" reveal a piece
 
         Tuple<int, int> old_mti = p.get_board_position(); // get this piece's previous position
 
+        
         // Delete captured piece if it exists, and remove its reference from PieceRefs
         if (BoardTiles[mti.Item1, mti.Item2] != null) {
+            if (BoardTiles[mti.Item1, mti.Item2].get_state() == Piece.State.Captured) {c_already_captured = true;}
             // prevent forward capturing  by pawns
             if (!(p.get_piece_type() == Piece.PieceType.Pawn && p.get_board_position().Item2 == mti.Item2)) {
                 captured_piece.ChangeState(Piece.State.Captured); // kill it    
@@ -547,7 +550,7 @@ public partial class Board : Node2D
         //GD.Print(BoardTiles[mti.Item1, mti.Item2]);  should be the piece you just moved
         //GD.Print(BoardTiles[old_mti.Item1, old_mti.Item2]); should be the old piece
 
-        return new PieceHistory(old_board, p, captured_piece, oldBoardPosition, mti); // returns the old board
+        return new PieceHistory(old_board, p, captured_piece, oldBoardPosition, mti, c_already_captured); // returns the old board
     }
 
     // Given an input PieceHistory object (see implementation in Piece.cs
@@ -560,8 +563,9 @@ public partial class Board : Node2D
         Piece cold = phist.get_capture();
         Tuple<int, int> pidx = phist.get_piece_index();
         Tuple<int, int> cidx = phist.get_cold_index();
+        bool already_captured = phist.already_captured(); // dont reveal if piece already captured
 
-        if (cold != null) {
+        if (cold != null && !already_captured) {
             cold.ChangeState(Piece.State.Placed); // add the piece back
             PieceRefs[cold.get_piece_color()].Add(cold); // add it back to pieceRefs too
         }

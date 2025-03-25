@@ -226,6 +226,11 @@ public partial class Piece : Node2D
 									}
 								}
 								break;
+							case Piece.PieceType.King:
+								if (tile == 1 && dir <= 7) {
+									threats.Add(p);
+								}
+								break;
 						}
 
 						break; // ONLY remove if you plan to allow pieces to go through same color 
@@ -379,16 +384,19 @@ public partial class PieceHistory {
 	Piece p, c;
 	Tuple<int, int> pold, cold;
 
+	bool c_already_captured = false; // sometimes, unmaking a move causes a captured piece to be revealed
+
 
 	public PieceHistory() {
 		
 	}
-	public PieceHistory(Piece[,] board, Piece p, Piece c, Tuple<int, int> pold, Tuple<int, int> cold) {
+	public PieceHistory(Piece[,] board, Piece p, Piece c, Tuple<int, int> pold, Tuple<int, int> cold, bool c_cap) {
 		this.board = board;
 		this.p = p;
 		this.c = c;
 		this.pold = pold;
 		this.cold = cold;
+		this.c_already_captured = c_cap;
 	}
 
 	public Piece[,] get_board() {
@@ -400,6 +408,10 @@ public partial class PieceHistory {
 	}
 	public Piece get_capture() {
 		return c;
+	}
+
+	public bool already_captured() {
+		return c_already_captured;
 	}
 
 	public Tuple<int, int> get_piece_index() {
