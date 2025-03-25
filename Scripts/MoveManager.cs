@@ -25,8 +25,8 @@ public partial class MoveManager : Node2D {
 
     // returns a list of all Move objects related to this piece as Strings.
     // Dependent on get_all_movement() being valid
-    public List<String> get_move_list_strings() {
-        List<String> moves = new List<String>();
+    public List<string> get_move_list_strings() {
+        List<string> moves = new List<string>();
 
         foreach (Move move in get_all_movement()) {
             //GD.Print(move);
@@ -281,6 +281,10 @@ public partial class Move : Node2D {
                 index_position.Item2 < 8 && index_position.Item2 > -1;
     }
 
+    // returns the move tuple of this move
+    public Tuple<int, int> get_tuple() {
+        return move_position;
+    }
     public override string ToString()
     {
         return "(" + move_position.Item2 + ", " + move_position.Item1 + ")";

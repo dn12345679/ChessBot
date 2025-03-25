@@ -34,7 +34,9 @@ public partial class Player : Node2D
                      selected_piece = p; 
                      piece_picked = true; // th ere is a piece being selected
                      original_position = p.GlobalPosition;
-                     // TODO: CLEAN THIS UP 
+
+
+                    // get the possible moves
                      MoveManager mvm = new MoveManager(p, board);
                      valid_moves = mvm; // to get valid moves
                      mvm.get_cardinal_movement(original_position); // set all cardinal
@@ -59,18 +61,41 @@ public partial class Player : Node2D
                 // if the move was valid, make changes on the board! and reset
                 if (success) {
                     selected_piece.ChangeState(Piece.State.Placed);
-                    
                     selected_piece.phist = board.make_move(selected_piece, move); // assign phist MOVE IS MADE HERE
                     
-                    // Check if the King is under attack
+                    // Check if the same color King is under attack
                     if (board.is_checked((Piece.PieceColor) selected_piece.get_piece_color(), board.BoardTiles) == true) {
                         board.unmake_move(selected_piece.phist);
+                    }
+                    // CHECK for CHECK AND CHECKMATE HERE !!!
+                    else{
+                        // check if you are checking the opposite color King
+                        MoveManager mvm = new MoveManager(selected_piece, board);
+                        //valid_moves = mvm; // to get valid moves
+                        original_position = selected_piece.GlobalPosition;
+                        mvm.get_cardinal_movement(original_position); // set all cardinal
+                        mvm.get_intermediate_movement(original_position);
+                        mvm.get_knight_movement(original_position);
 
+                        // get the king of opposite color, you are the attacker
+                        // also get the color of the possible blockers
+                        Piece king = (selected_piece.get_piece_color() == (int) Piece.PieceColor.White) ? Board.Black_King : Board.White_King;
+                        Piece.PieceColor col = (selected_piece.get_piece_color() == (int) Piece.PieceColor.White) ? Piece.PieceColor.Black : Piece.PieceColor.White;
+                        // handle check and checkmate
+                        if (mvm.get_move_list_strings().Contains(king.get_board_position().ToString())) {
+                            GD.Print("check");
+                            
+                            if (board.is_checkmated(col, board.BoardTiles, selected_piece)) {
+                                GD.Print("checkmate");
+                            }
+                        }
                     }
 
-                    board.temp_label.Text = board.ToString();
+
+                    board.temp_label.Text = board.ToString(); // idk
 
                 }
+                // INVALID MOVE
                 else {
                     selected_piece.GlobalPosition = original_position; // reset position, nothing changed
                 }

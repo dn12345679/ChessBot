@@ -198,14 +198,13 @@ public partial class Piece : Node2D
 								break;
 							case Piece.PieceType.Pawn:
 								if (dir >= 4 && dir <= 7) {
-									if (p.get_piece_color() == (int) Piece.PieceColor.White && directions[dir].Item2 == 1 && tile == 1) {
+									if (p.get_piece_color() == (int) Piece.PieceColor.White && directions[dir].Item1 == 1 && tile == 1) {
 										// White pawns attack diagonally upward
-										
 										threats.Add(p);
 									}
-									else if (p.get_piece_color() == (int) Piece.PieceColor.Black && directions[dir].Item2 == -1 && tile == 1) {
+									else if (p.get_piece_color() == (int) Piece.PieceColor.Black && directions[dir].Item1 == -1 && tile == 1) {
 										// Black pawns attack diagonally downward
-										
+										GD.Print("lma");
 										threats.Add(p);
 									}
 								}

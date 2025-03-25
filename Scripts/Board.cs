@@ -1,11 +1,18 @@
 using Godot;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
+using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
 
 public partial class Board : Node2D
 {
     public Piece[,] BoardTiles;
+
+    public Dictionary<int, List<Piece>> PieceRefs = new Dictionary<int, List<Piece>>{} ; // quick ref for pieces
+    // pieces are to be removed from here if they are captured, and added back if "unmake_move()" is called by Player.cs
 
     public GameManager gm;
 
@@ -63,6 +70,9 @@ public partial class Board : Node2D
     /*
     Assumes standard FEN notation, separated by a / symbol
     modify if you adding a new piece or osmething
+
+    adds pieces to PieceRefs dict
+    sets King references
     */
     private void ReadForsythEdwards(String FEN) {
 
@@ -125,6 +135,23 @@ public partial class Board : Node2D
                     BoardTiles[row, col] = add_piece;
                     AddChild(add_piece);
                     add_piece.set_board_position(new Tuple<int, int>(row, col)); // sets the index
+
+
+                    // I FORGOT WHY color is swapped. but just roll with it
+                    // -color to swap the color because Piece.cs says so and I don't want to figure out why
+                    // to keep track of each piece by it's color
+                    // simplifies piece obtaining.
+                    if (PieceRefs.ContainsKey(-color)) {
+                        PieceRefs[-color].Add(add_piece);
+                    }
+                    else{
+                        List<Piece> pieces = new List<Piece>
+                        {
+                            add_piece
+                        };
+                        PieceRefs.Add(-color, pieces);
+                    }
+
 
                     // special case: dont change unless for modding, sets the king references
                     if (color == 1 && type == 6) {
@@ -227,6 +254,249 @@ public partial class Board : Node2D
         return false;
     }
 
+
+    /*
+        To be called by the "attacker" piece on the Opposite color
+        Returns whether the king of the color is checkmated
+            Conditions:
+                - King has no valid moves
+                - "Unpinned" pieces cannot block checkmates
+                    - To optimize, I calculate the orientation to skip impossible pieces
+                - King is directly in check by "attacker"
+
+        Inputs:
+            - color: the Piece.PieceColor OPPOSITE of the color of the Piece attacker
+            - board: the board to check for intersection
+            - attacker: the piece attacking the king of color "color"
+        How does it work?
+            - assumes the game is over; the king has been checkmated
+            - loops over all possible conditions that would render the king not checkmated
+            - Not checkmated if at any point there is a valid move
+    */
+    public bool is_checkmated(Piece.PieceColor color, Piece[,] board, Piece attacker) {
+
+        Vector2 apos = attacker.get_vector_position(); // attacker position
+        Vector2 kpos = new Vector2(); // king position 
+
+        Tuple<int, int>[] directions = new Tuple<int, int>[16] {
+            new Tuple<int, int>(0, -1), new Tuple<int, int>(1, 0), new Tuple<int, int>(0, 1), new Tuple<int, int>(-1, 0),   // Horizontal/Vertical
+            new Tuple<int, int>(-1, -1), new Tuple<int, int>(1, 1), new Tuple<int, int>(-1, 1), new Tuple<int, int>(1, -1),   // Diagonal
+            new Tuple<int, int>(2, 1), new Tuple<int, int>(2, -1), new Tuple<int, int>(-2, 1), new Tuple<int, int>(-2, -1),  // Knight moves
+            new Tuple<int, int>(1, 2), new Tuple<int, int>(1, -2), new Tuple<int, int>(-1, 2), new Tuple<int, int>(-1, -2)   // knight moves
+        };
+
+        List<int> idx = new List<int>();
+
+        switch (color) {
+            case Piece.PieceColor.Black:
+                kpos = Black_King.get_vector_position();
+                break; 
+            case Piece.PieceColor.White:
+                kpos = White_King.get_vector_position();
+                break;
+        }   
+
+        Vector2 posp; // to check intersections for each individual piece
+
+        List<Piece> possible = new List<Piece>(); // possible blockers
+
+        // optimization
+        // step 1: add hte indexes of the directions as written above. Each "direction" is in form (y, x) or (row, column)
+        foreach (Piece p in PieceRefs[(int) color]) {
+
+            posp = p.get_vector_position(); // get the base
+            idx = new List<int>();
+            switch (p.get_piece_type()) {
+                case Piece.PieceType.Rook:
+                    idx.AddRange(Enumerable.Range(0, 4));
+
+                    break;
+                case Piece.PieceType.Bishop:
+                    idx.AddRange(Enumerable.Range(4, 8));
+                    break;
+                case Piece.PieceType.Queen:
+                    idx.AddRange(Enumerable.Range(4, 8));
+                    break;
+                case Piece.PieceType.Pawn:
+                    if (p.get_piece_color() == (int) Piece.PieceColor.Black) {
+                        // White pawns attack diagonally upward
+                        idx.Add(1);
+                        idx.Add(7);
+                        idx.Add(5);
+                    }
+                    else if (p.get_piece_color() == (int) Piece.PieceColor.White) {
+                        // Black pawns attack diagonally downward
+                        idx.Add(3);
+                        idx.Add(6);
+                        idx.Add(4);
+                    }
+                    break;
+                case Piece.PieceType.Knight:
+                    idx.AddRange(Enumerable.Range(9, 16));
+                    break;
+            }
+            // step 2: iterate over possible vectors and search for possible intersections
+
+            switch (p.get_piece_type()) {
+                case Piece.PieceType.Rook:
+                case Piece.PieceType.Bishop:
+                case Piece.PieceType.Queen:
+                    foreach (int id in idx) {
+                        if (intersectable(kpos, attacker.get_vector_position(), 
+                            posp, posp + new Vector2(directions[id].Item1, directions[id].Item2) * 8 * CELL_SIZE)) {
+                                possible.Add(p);
+                            }
+                    }
+                    break;
+                // Pawns have a unique case since if they intersect, they are guaranteed to be blockable
+                case Piece.PieceType.Pawn:
+                    for(int i = 0; i < idx.Count; i++) {
+                        int id = idx[i]; 
+                        // captures only
+                        if ( i > 0) {
+                            Tuple<int, int> intersect = new Tuple<int,int>((int) posp.Y/32 + directions[id].Item1, 
+                                                                            (int)posp.X/ 32 + directions[id].Item2);
+
+                            if (Move.tuple_in_bounds(intersect) && BoardTiles[intersect.Item1, intersect.Item2] == attacker
+                            && !p.is_pinned(p).Item1) {
+                                return false; // unpinned and able to capture
+                            }
+                        }
+                        // moves only
+                        else{
+                            if (intersectable(kpos, attacker.get_vector_position(), 
+                            posp, posp + new Vector2(directions[id].Item1, directions[id].Item2) * 1 * CELL_SIZE) || intersectable(kpos, attacker.get_vector_position(), 
+                            posp, posp + new Vector2(directions[id].Item1, directions[id].Item2) * 2 * CELL_SIZE))
+
+                            possible.Add(p);
+                        }
+
+                    }
+                        
+                    break;
+                case Piece.PieceType.Knight:
+                    possible.Add(p); // i really don't know how ot handle this one
+                    break;
+            }
+            
+        }
+        
+        // step 3: get all the tiles that need to be covered (exclusive of the king)
+        Vector2 dir = (apos - kpos) / (apos-kpos).Length(); // direction from attacker to king
+        Vector2 curr_pos = attacker.get_vector_position(); // to iterate
+        List<Tuple<int, int>> to_cover = new List<Tuple<int, int>>{}; // need to cover these tiles
+        dir = new Vector2((int)Math.Round(dir.X), (int)Math.Round(dir.Y)); // normalize to a direction
+        while (curr_pos != kpos) {
+            to_cover.Add(new Tuple<int, int>((int) curr_pos.Y / CELL_SIZE, (int) curr_pos.X / CELL_SIZE));
+            curr_pos += new Vector2(dir.Y, dir.X) * CELL_SIZE;
+        }
+ 
+        // step 4: check if any of the "possible" pieces
+        //GD.Print(String.Join(", ", to_cover));
+
+        // NOTE FUTURE ME: optimize this by using  the fact that "check" only happens from 1 direction
+        foreach (Piece p in possible) {
+           
+            MoveManager mvm = new MoveManager(p, this);
+            Vector2 original_position = p.GlobalPosition;
+            // dont consider pawn straight movement
+            mvm.get_cardinal_movement(original_position); // set all cardinal
+            mvm.get_knight_movement(original_position);
+            mvm.get_intermediate_movement(original_position);
+            
+            
+            // SEPERATE CONDITION FOR PAWNS 
+            if (p.get_piece_type() != Piece.PieceType.Pawn) {
+                if (mvm.get_move_list_strings().Any(to_cover.Select(t => $"({t.Item1}, {t.Item2})").ToList().Contains)) {
+                    return false; // SOMETHING CAN BLOCK THE KING
+                }
+            }
+            else {
+
+                foreach (Move m in mvm.get_all_movement()) {
+                    // Woah this is weird; its because the tuple format for "Move"
+                        // objects are different from the tuple format for "get_board_position()"
+                    if (m.get_tuple().Item1 == p.get_board_position().Item2 
+                    && m.get_tuple().Item1 == attacker.get_board_position().Item2) {
+                        continue; // cant capture by going straight
+                    }
+                    // ONLY CAPTURES OR VALID BLOCKS 
+                    else if (mvm.get_move_list_strings().Any(to_cover.Select(t => $"({t.Item1}, {t.Item2})").ToList().Contains)) {
+                        return false; // SOMETHING CAN BLOCK THE KING
+                    }
+                }
+            }
+
+        }
+
+        // step 5: IF THE ABOVE CHUNK didnt return,
+            // that implies that all pieces that can make the block are pinned by other pieces. 
+        
+        // forgot to implement a null constructor :( 
+        MoveManager mv = new MoveManager(White_King, this); // just create a basic movemanager
+         // get the king position we found
+        mv.get_cardinal_movement(kpos); // set all cardinal
+        mv.get_intermediate_movement(kpos);     
+
+        // if at any point the king can make a valid move, he is not checkmated
+        foreach (Move m in mv.get_all_movement()) {
+            if (White_King.get_threats(m.get_tuple(), board).Count == 0) {
+                return false;
+            }
+        }
+
+        //CHECKMATE
+        return true; // the game is over
+    }
+
+    // returns whether there is a valid intersection before checking a piece's moves
+    private bool intersectable(Vector2 King, Vector2 Enemy, Vector2 Target, Vector2 Border) 
+    {
+        // see https://www.geeksforgeeks.org/check-if-two-given-line-segments-intersect/
+        float o1 = orientation(King, Enemy, Target);
+        float o2 = orientation(King, Enemy, Border);
+        float o3 = orientation(Target, Border, King);
+        float o4 = orientation(Target, Border, Enemy);
+
+        // intersection found by orientation
+        if (o1 != o2 && o3 != o4) {
+            return true;
+        }
+
+        // collinearity
+        if (o1 == 0 && on_segment(King, Enemy, Target)) {return true;}
+        if (o2 == 0 && on_segment(King, Enemy, Border)) {return true;}
+        if (o3 == 0 && on_segment(Target, Border, King)) {return true;}
+        if (o4 == 0 && on_segment(Target, Border, Enemy)) {return true;}
+        return false; // no intersection, don't check this piece
+    }
+
+    /* returns the orientation of 3 points in space, where AB is a segment,
+        and C is a point
+        Helper method for is_checkmated
+    */
+    private float orientation(Vector2 A, Vector2 B, Vector2 C) {
+        float prod = (B.X - A.X) * (C.Y - A.Y) - (B.Y - A.Y) * (C.X - A.X);
+        if (prod > 0) {
+            return 1;
+        }
+        else if (prod < 0) {
+            return -1;
+        }
+        else{
+            return 0;
+        }
+    }
+
+    /*
+    Returns whether point C lies on segment AB in the exception that 
+        the orientation is 0.
+    */
+    private bool on_segment(Vector2 A, Vector2 B, Vector2 C) {
+        return Math.Min(A.X, B.X) <= C.X && C.X <= Math.Max(A.X, B.X) 
+            && Math.Min(A.Y, B.Y) <= C.Y && C.Y <= Math.Max(A.Y, B.Y);
+    }
+
     // Commits changes to making a move, assumes all validation was complete
     // Validation completed in move_validation, to be checked by myself 
     
@@ -247,9 +517,10 @@ public partial class Board : Node2D
 
         Tuple<int, int> old_mti = p.get_board_position(); // get this piece's previous position
 
-        // Delete captured piece if it exists
+        // Delete captured piece if it exists, and remove its reference from PieceRefs
         if (BoardTiles[mti.Item1, mti.Item2] != null) {
             captured_piece.ChangeState(Piece.State.Captured); // kill it    
+            PieceRefs[captured_piece.get_piece_color()].Remove(captured_piece); // remove its reference
         }
         
         // set the new piece on that position
@@ -280,6 +551,7 @@ public partial class Board : Node2D
 
         if (cold != null) {
             cold.ChangeState(Piece.State.Placed); // add the piece back
+            PieceRefs[cold.get_piece_color()].Add(cold); // add it back to pieceRefs too
         }
         
         pold.set_board_position(pidx);
