@@ -31,17 +31,21 @@ public partial class Player : Node2D
                 if (p != null) 
                 {   
                     // make sure to reset these attributes if unselected
-                     selected_piece = p; 
-                     piece_picked = true; // th ere is a piece being selected
-                     original_position = p.GlobalPosition;
+                    if (p.get_piece_color() == (int) board.gm.get_current_turn()) 
+                    {
+                        selected_piece = p; 
+                        piece_picked = true; // th ere is a piece being selected
+                        original_position = p.GlobalPosition;
 
 
-                    // get the possible moves
-                     MoveManager mvm = new MoveManager(p, board);
-                     valid_moves = mvm; // to get valid moves
-                     mvm.get_cardinal_movement(original_position); // set all cardinal
-                     mvm.get_intermediate_movement(original_position);
-                     mvm.get_knight_movement(original_position);
+                        // get the possible moves
+                        MoveManager mvm = new MoveManager(p, board);
+                        valid_moves = mvm; // to get valid moves
+                        mvm.get_cardinal_movement(original_position); // set all cardinal
+                        mvm.get_intermediate_movement(original_position);
+                        mvm.get_knight_movement(original_position);
+                    }
+
                 }
                
             }
@@ -66,6 +70,8 @@ public partial class Player : Node2D
                     // Check if the same color King is under attack
                     if (board.is_checked((Piece.PieceColor) selected_piece.get_piece_color(), board.BoardTiles) == true) {
                         board.unmake_move(selected_piece.phist);
+                        reset_selected_piece();
+                        return;
                     }
                     // CHECK for CHECK AND CHECKMATE HERE !!!
                     else{
@@ -83,16 +89,22 @@ public partial class Player : Node2D
                         Piece.PieceColor col = (selected_piece.get_piece_color() == (int) Piece.PieceColor.White) ? Piece.PieceColor.Black : Piece.PieceColor.White;
                         // handle check and checkmate
                         if (mvm.get_move_list_strings().Contains(king.get_board_position().ToString())) {
-                            GD.Print("check");
+                            board.temp_label.Text = "Check";
                             
                             if (board.is_checkmated(col, board.BoardTiles, selected_piece)) {
-                                GD.Print("checkmate");
+                                board.temp_label.Text = "Checkmate";
                             }
                         }
+                        else{
+                            board.temp_label.Text = "";
+                        }
+
+                        
                     }
 
 
-                    board.temp_label.Text = board.ToString(); // idk
+                    // EVERYTHING HERE MEANS PLAYER SUCCESS
+                    board.gm.alternate_turn(); // change turns()
 
                 }
                 // INVALID MOVE

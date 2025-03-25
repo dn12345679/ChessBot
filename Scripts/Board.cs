@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 
 public partial class Board : Node2D
 {
+
     public Piece[,] BoardTiles;
 
     public Dictionary<int, List<Piece>> PieceRefs = new Dictionary<int, List<Piece>>{} ; // quick ref for pieces
@@ -24,7 +25,7 @@ public partial class Board : Node2D
     const string DEFAULT_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 
-    public Label temp_label;
+    public Label temp_label; // to show check and checkmate
 
     public int CELL_SIZE = 32;
     public override void _Ready()
@@ -36,8 +37,10 @@ public partial class Board : Node2D
         
         newLabel.Position = new Vector2(300, 0);
         newLabel.Size = new Vector2(121, 121); 
-        newLabel.Text = "dfasdf ";
+        newLabel.Text = "";
         temp_label = newLabel;
+
+        
 
     }
 
@@ -48,6 +51,7 @@ public partial class Board : Node2D
         BoardTiles = new Piece[8,8];
         CreateBoard(); // tiles
         ReadForsythEdwards(DEFAULT_FEN); // pieces
+        
     }
 
     // Generates a board of 64 tiles for the chess board
@@ -381,19 +385,23 @@ public partial class Board : Node2D
             
         }
         
+
+
         // step 3: get all the tiles that need to be covered (exclusive of the king)
-        Vector2 dir = (apos - kpos) / (apos-kpos).Length(); // direction from attacker to king
+        Vector2 dir = (kpos - apos) / (kpos-apos).Length(); // direction from attacker to king
         Vector2 curr_pos = attacker.get_vector_position(); // to iterate
         List<Tuple<int, int>> to_cover = new List<Tuple<int, int>>{}; // need to cover these tiles
         dir = new Vector2((int)Math.Round(dir.X), (int)Math.Round(dir.Y)); // normalize to a direction
-        while (curr_pos != kpos) {
+
+        while (curr_pos != kpos && Move.tuple_in_bounds(new Tuple<int, int>((int) curr_pos.Y / CELL_SIZE, (int) curr_pos.X / CELL_SIZE))) {
+            //break; // idk what broke here
+             
             to_cover.Add(new Tuple<int, int>((int) curr_pos.Y / CELL_SIZE, (int) curr_pos.X / CELL_SIZE));
-            curr_pos += new Vector2(dir.Y, dir.X) * CELL_SIZE;
+            curr_pos += new Vector2(dir.X, dir.Y) * CELL_SIZE;
         }
- 
+        //GD.Print("Flag 3");
         // step 4: check if any of the "possible" pieces
         //GD.Print(String.Join(", ", to_cover));
-
         // NOTE FUTURE ME: optimize this by using  the fact that "check" only happens from 1 direction
         foreach (Piece p in possible) {
            
@@ -403,11 +411,12 @@ public partial class Board : Node2D
             mvm.get_cardinal_movement(original_position); // set all cardinal
             mvm.get_knight_movement(original_position);
             mvm.get_intermediate_movement(original_position);
-            
-            
+            //GD.Print(p.get_piece_type());
+            //GD.Print(String.Join(", ", mvm.get_move_list_strings()));
             // SEPERATE CONDITION FOR PAWNS 
             if (p.get_piece_type() != Piece.PieceType.Pawn) {
                 if (mvm.get_move_list_strings().Any(to_cover.Select(t => $"({t.Item1}, {t.Item2})").ToList().Contains)) {
+                    
                     return false; // SOMETHING CAN BLOCK THE KING
                 }
             }
@@ -519,8 +528,11 @@ public partial class Board : Node2D
 
         // Delete captured piece if it exists, and remove its reference from PieceRefs
         if (BoardTiles[mti.Item1, mti.Item2] != null) {
-            captured_piece.ChangeState(Piece.State.Captured); // kill it    
-            PieceRefs[captured_piece.get_piece_color()].Remove(captured_piece); // remove its reference
+            // prevent forward capturing  by pawns
+            if (!(p.get_piece_type() == Piece.PieceType.Pawn && p.get_board_position().Item2 == mti.Item2)) {
+                captured_piece.ChangeState(Piece.State.Captured); // kill it    
+                PieceRefs[captured_piece.get_piece_color()].Remove(captured_piece); // remove its reference             
+            }
         }
         
         // set the new piece on that position

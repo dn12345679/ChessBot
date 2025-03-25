@@ -204,7 +204,6 @@ public partial class Piece : Node2D
 									}
 									else if (p.get_piece_color() == (int) Piece.PieceColor.Black && directions[dir].Item1 == -1 && tile == 1) {
 										// Black pawns attack diagonally downward
-										GD.Print("lma");
 										threats.Add(p);
 									}
 								}
