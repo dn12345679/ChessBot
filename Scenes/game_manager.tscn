@@ -8,3 +8,27 @@ script = ExtResource("1_fqoao")
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(224, 120)
 zoom = Vector2(2, 2)
+
+[node name="GameMenu" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 384.0
+offset_top = 128.0
+offset_right = 424.0
+offset_bottom = 168.0
+
+[node name="Menu" type="Button" parent="GameMenu"]
+layout_mode = 0
+offset_right = 8.0
+offset_bottom = 8.0
+text = "Menu
+"
+
+[node name="GameState" type="Label" parent="GameMenu"]
+visible = false
+layout_mode = 0
+offset_left = -32.0
+offset_top = 40.0
+offset_right = 118.0
+offset_bottom = 63.0
+text = "Draw, Nobody wins"

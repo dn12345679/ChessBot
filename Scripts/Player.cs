@@ -1,6 +1,5 @@
 using Godot;
 using System;
-using System.Collections.Generic;
 
 public partial class Player : Node2D
 {   
@@ -19,6 +18,11 @@ public partial class Player : Node2D
     {
         board = chess_board;
     }
+
+    /*
+        All things related to Player input
+        Handles dragging, state changes, and check/checkmate 
+    */
     public override void _Input(InputEvent @event)
     {
         base._Input(@event);
@@ -58,8 +62,7 @@ public partial class Player : Node2D
                 // check conditions to make the move if it exists
                 // MOVE must exist for move_validation to even run (see Board.cs)
                 if (valid_moves.get_move_list_strings().Contains(move.ToString())) {
-                    success = board.move_validation(selected_piece, move);
-                    
+                    success = board.move_validation(selected_piece, move);                
                 }
 
                 // if the move was valid, make changes on the board! and reset
@@ -96,12 +99,11 @@ public partial class Player : Node2D
                             }
                         }
                         else{
+                            // reset text if unchecked
                             board.temp_label.Text = "";
                         }
-
                         
                     }
-
 
                     // EVERYTHING HERE MEANS PLAYER SUCCESS
                     board.gm.alternate_turn(); // change turns()
@@ -111,6 +113,7 @@ public partial class Player : Node2D
                 else {
                     selected_piece.GlobalPosition = original_position; // reset position, nothing changed
                 }
+
                 reset_selected_piece(); // always reset otherwise, invalid move
             }
         }

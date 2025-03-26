@@ -371,6 +371,10 @@ public partial class Piece : Node2D
 		this.PieceIndex = new_pos;
 	}
 
+	/* Returns the string representation of a piece
+	 NOTE: if you change this, please update the dependency for "prf_contains_exactly"
+		inside of GameManager.cs
+	*/
 	public override String ToString() {
 		return rep + "";
 	}

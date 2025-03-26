@@ -107,6 +107,13 @@ public partial class MoveManager : Node2D {
                             break;    
                         }
                         
+                        // optimization 3/25/25, don't add moves to king if it results in a check
+                        if (current_piece.get_piece_type() == Piece.PieceType.King) {
+                            Tuple<int, int> tup2move = new Tuple<int, int>(sq_move_default.Item1.get_tuple().Item2, sq_move_default.Item1.get_tuple().Item1);
+                            if (board.is_checked((Piece.PieceColor) current_piece.get_piece_color(), board.BoardTiles, tup2move)) {
+                                break;
+                            }
+                        }
                         moves.Add(sq_move_default.Item1); // valid move
                         
                         // Since King can only move 1 square, break early
@@ -172,6 +179,15 @@ public partial class MoveManager : Node2D {
                         if(sq_move_default == null) {
                             break;
                         }
+
+                        // optimization 3/25/25, don't add moves to king if it results in a check
+                        if (current_piece.get_piece_type() == Piece.PieceType.King) {
+                            Tuple<int, int> tup2move = new Tuple<int, int>(sq_move_default.Item1.get_tuple().Item2, sq_move_default.Item1.get_tuple().Item1);
+                            if (board.is_checked((Piece.PieceColor) current_piece.get_piece_color(), board.BoardTiles, tup2move)) {
+                                break;
+                            }
+                        }
+                        
                         moves.Add(sq_move_default.Item1); // valid move
                         
                         // Since King can only move 1 square, break early
@@ -221,7 +237,29 @@ public partial class MoveManager : Node2D {
         knight_moves = moves; // important: sets the knight moves so its accessible
         return moves;
     }
+
+    public List<Move> get_castle(Vector2 current_position, Piece p) {
+        // king initiated castle from unmoved king. no index check required
+        List<Move> moves = new List<Move>();
+        if (p.get_piece_type() == Piece.PieceType.King && p.get_state() == Piece.State.Unmoved) {
+            Tuple<int, int> kp = p.get_board_position();
+            Piece rookr = board.BoardTiles[kp.Item2, kp.Item1 + 3];
+            Piece rookl = board.BoardTiles[kp.Item2, kp.Item1 - 4];
+
+            /* no piece type check required, since an unmoved piece in that position is by default
+                a rook
+            */
+            if (rookr != null && rookr.get_state() == Piece.State.Unmoved) 
+            {
+                Move move = new Move(p, board);
+                Tuple<Move, int> sq_move = move.move_if_valid(current_position + new Vector2(0, current_piece.get_piece_color() * board.CELL_SIZE));
+               
+            }
+        }
+        return moves;
+    }
 }
+
 
 // A sub class only intended to validate and check if a move calculated is legal or not.
 // Does not handle any logic in regards to the moves position
@@ -261,6 +299,10 @@ public partial class Move : Node2D {
             // case 2: opposite color piece
             // (break iteration here, handled by "get_xxx_movement()")
             else if(piece_to.get_piece_color() != piece.get_piece_color()) {
+                if (piece.get_piece_type() == Piece.PieceType.Pawn && piece_to.get_board_position().Item2 == piece.get_board_position().Item2) {
+                    return null; // stop pawns from going straight on other pieces
+                }
+
                 this.move_position = move_position; // update this move object to containt the valid move
                 return new Tuple<Move, int>(this, piece_to.get_piece_color());                    
             }

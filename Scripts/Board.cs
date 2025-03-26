@@ -246,14 +246,15 @@ public partial class Board : Node2D
         given an input Piece.PieceColor color, return whether the King
         associated with the color is under attack.
     */
-    public bool is_checked(Piece.PieceColor color, Piece[,] board) {
+    public bool is_checked(Piece.PieceColor color, Piece[,] board, Tuple<int, int> pos = null) {
 
         switch (color) {
             case Piece.PieceColor.Black:
-                
-                return Black_King.get_threats(Black_King.get_board_position(), board).Count > 0;
+                if (pos == null) {pos = Black_King.get_board_position();}
+                return Black_King.get_threats(pos, board).Count > 0;
             case Piece.PieceColor.White:
-                return White_King.get_threats(White_King.get_board_position(), board).Count > 0;
+                if (pos == null) {pos = White_King.get_board_position();}
+                return White_King.get_threats(pos, board).Count > 0;
         }
         return false;
     }
@@ -441,15 +442,16 @@ public partial class Board : Node2D
         // step 5: IF THE ABOVE CHUNK didnt return,
             // that implies that all pieces that can make the block are pinned by other pieces. 
         
-        // forgot to implement a null constructor :( 
-        MoveManager mv = new MoveManager(White_King, this); // just create a basic movemanager
+        
+        Piece king = (color == Piece.PieceColor.White) ? Board.White_King : Board.Black_King;
+        MoveManager mv = new MoveManager(king, this); // just create a basic movemanager
          // get the king position we found
         mv.get_cardinal_movement(kpos); // set all cardinal
         mv.get_intermediate_movement(kpos);     
 
         // if at any point the king can make a valid move, he is not checkmated
         foreach (Move m in mv.get_all_movement()) {
-            if (White_King.get_threats(m.get_tuple(), board).Count == 0) {
+            if (king.get_threats(m.get_tuple(), board).Count == 0) {
                 return false;
             }
         }
@@ -555,7 +557,7 @@ public partial class Board : Node2D
 
     // Given an input PieceHistory object (see implementation in Piece.cs
     // unmakes the previous move recorded in phist
-    // ONLY INTENDED FOR BOT and other cool things, no undo move in real game
+    // Used when move puts king in check illegally
 
     public void unmake_move(PieceHistory phist) {
         Piece[,] history_board = phist.get_board();
