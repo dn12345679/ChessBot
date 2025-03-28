@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://Scripts/PawnPromotion.cs" id="2_8eunx"]
 
 [node name="GameManager" type="Node2D"]
+process_mode = 1
 script = ExtResource("1_fqoao")
 
 [node name="Camera2D" type="Camera2D" parent="."]

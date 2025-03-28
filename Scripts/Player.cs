@@ -69,11 +69,11 @@ public partial class Player : Node2D
             else if (!mouseClicked.Pressed && mouseClicked.ButtonIndex == MouseButton.Left && piece_picked == true) {
                 //GD.Print(get_piece_under_mouse() + "undermouse");
                 piece_picked = false; // set the piece selection to none
-                Tuple<int, int> move = board.GetIndexUnderMouse(); // contains the "move" being made, in the form (row, col)
+                Tuple<int, int> move = board.GetIndexUnderMouse(); // contains the "move" being made, in the form (row, col) or NULL
                 bool success = false; // piece invalid until true
                 // check conditions to make the move if it exists
                 // MOVE must exist for move_validation to even run (see Board.cs)
-                if (valid_moves != null && valid_moves.get_move_list_strings().Contains(move.ToString())) {
+                if (valid_moves != null && move != null && valid_moves.get_move_list_strings().Contains(move.ToString())) {
                     success = board.move_validation(selected_piece, move);                
                 }
 
@@ -128,10 +128,11 @@ public partial class Player : Node2D
                             board.en_passant_square = new Tuple<int, int>(move.Item1 - selected_piece.get_piece_color(), move.Item2);
                         }
 
-                        // PAWN PROMOTION LOGIC
+                        // PAWN PROMOTION LOGIC, no color check required since pawns naturally cant go backwards
                         if (selected_piece.get_piece_type() == Piece.PieceType.Pawn ) {
                             if (move.Item1 == 0 || move.Item1 == board.DIMENSION_Y) {
                                 board.gm.promote_pawn(selected_piece);
+                                
                             }
                         } // also remember to check for checks and checkmates after
 

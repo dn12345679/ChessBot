@@ -6,6 +6,7 @@ using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 
 public partial class GameManager : Node2D
 {
@@ -49,7 +50,7 @@ public partial class GameManager : Node2D
 		style_pieces((int) current_turn);
 		prf = board.PieceRefs; // get the piece refs for easy access
 
-		Player player= new Player(board);
+		Player player = new Player(board);
 		AddChild(player);
 
 		game_info = GetNode<Control>("GameInfo");

@@ -26,7 +26,7 @@ public partial class Board : Node2D
 
     const string DEFAULT_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // DO NOT CHANGE
 
-    public string fen = "rnbqkbn1/ppppp1pP/8/8/5pP1/8/PPPPPP1P/RNBQKBNR b KQkq g3 0 2"; // feel free to change this as long as it fits format
+    public string fen = "rnbqk3/pppppppP/8/8/5pP1/8/PPPPPP1P/RNBQKBNR w KQkq g3 0 2"; // feel free to change this as long as it fits format
 
     public int CELL_SIZE = 32;
     public int DIMENSION_X = 8;
@@ -213,7 +213,6 @@ public partial class Board : Node2D
         int file = (int)Math.Floor(pos.X / CELL_SIZE);
         int rank = (int)Math.Floor(pos.Y / CELL_SIZE);
         if (rank < 8 && rank > -1 && file < 8 && file > -1) {
-            
             return new Tuple<int, int>(rank, file);
         }
         return null;

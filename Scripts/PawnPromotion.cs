@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Threading.Tasks;
 
 public partial class PawnPromotion : Control
 {	
@@ -75,9 +76,29 @@ public partial class PawnPromotion : Control
 
 		GetTree().Paused = false; // unpause
 		Visible = false;
-		pold = null;
 
-		// OTHER LOGIC: CHECK if king is checked, etc
+		add_piece.Modulate = new Color(1f, 1f, 1f, 0.3f); // recolor it as the "turn" is over
 
+		// CHECKING LOGIC (copied from Player.cs)
+
+		// get the king of opposite color, you are the attacker
+		// also get the color of the possible blockers
+		Piece.PieceColor color = (pold.get_piece_color() == (int) Piece.PieceColor.White) ? Piece.PieceColor.Black : Piece.PieceColor.White;
+		Piece king = (pold.get_piece_color() == (int) Piece.PieceColor.White) ? Board.Black_King : Board.White_King;
+		
+		// handle check and checkmate
+		string state = "";
+		// state set here. Perspective of hte attacker
+		if (board.is_checked(color, board.BoardTiles)) {
+			state = "Check";
+			if (board.is_checkmated(color, board.BoardTiles, king.get_threats(king.get_board_position(), board.BoardTiles)[0])) {
+				GameManager.GameState gs = (pold.get_piece_color() == (int)Piece.PieceColor.White) ? GameManager.GameState.White_win : GameManager.GameState.Black_win;
+				board.gm.set_state(gs);
+				state = "Checkmate";
+			}
+		}
+
+		board.gm.set_info(state, new Tuple<int, int>(row, col), (Piece.PieceColor) (-pold.get_piece_color()), add_piece);
+		pold.QueueFree();
 	}
 }
