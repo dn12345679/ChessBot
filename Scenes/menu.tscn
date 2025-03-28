@@ -1,4 +1,7 @@
-[gd_scene format=3 uid="uid://c8aobvmplyrjr"]
+[gd_scene load_steps=3 format=3 uid="uid://c8aobvmplyrjr"]
+
+[ext_resource type="Script" path="res://Scripts/menu.cs" id="1_3vk57"]
+[ext_resource type="PackedScene" uid="uid://e6rnledsxnof" path="res://Scenes/game_manager.tscn" id="2_tihtw"]
 
 [node name="Menu" type="Control"]
 layout_mode = 3
@@ -7,3 +10,29 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("1_3vk57")
+
+[node name="GameManager" parent="." instance=ExtResource("2_tihtw")]
+visible = false
+
+[node name="MenuItems" type="Control" parent="."]
+anchors_preset = 0
+offset_right = 1152.0
+offset_bottom = 648.0
+
+[node name="PlayButton" type="Button" parent="MenuItems"]
+layout_mode = 0
+offset_left = 448.0
+offset_top = 256.0
+offset_right = 704.0
+offset_bottom = 384.0
+text = "Play"
+
+[node name="TItle" type="Label" parent="MenuItems"]
+layout_mode = 0
+offset_left = 464.0
+offset_top = 88.0
+offset_right = 704.0
+offset_bottom = 192.0
+theme_override_font_sizes/font_size = 50
+text = "Chess"

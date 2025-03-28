@@ -16,7 +16,8 @@ public partial class MoveManager : Node2D {
     private List<Move> cardinal_moves = new List<Move>();
     private List<Move> intermediate_moves = new List<Move>();
     private List<Move> knight_moves = new List<Move>();
-
+    private List<Move> castle_moves = new List<Move>();
+    private List<Move> enpassant_moves = new List<Move>();
     public MoveManager(Piece piece, Board board) {
         this.board = board;
         this.current_piece = piece;
@@ -49,6 +50,8 @@ public partial class MoveManager : Node2D {
         if (cardinal_moves != null && cardinal_moves.Count > 0) {moves.AddRange(cardinal_moves);} // add all cardinal moves if they exist
         if (intermediate_moves != null && intermediate_moves.Count > 0) {moves.AddRange(intermediate_moves);} // add all intermediate moves if they exist
         if (knight_moves != null && knight_moves.Count > 0) {moves.AddRange(knight_moves);}
+        if (castle_moves != null && castle_moves.Count > 0) {moves.AddRange(castle_moves);}
+        if (enpassant_moves != null && enpassant_moves.Count > 0) {moves.AddRange(enpassant_moves);}
 
         return moves;
     }
@@ -146,6 +149,7 @@ public partial class MoveManager : Node2D {
         switch (current_piece.get_piece_type()) {
             // pawn and first tmove of pawn
             case Piece.PieceType.Pawn:
+                // left and right diagonals
                 Move move = new Move(current_piece, board);
                 Tuple<Move, int> sq_move = move.move_if_valid(current_position + new Vector2(-1, current_piece.get_piece_color()) * board.CELL_SIZE);
                 
@@ -238,27 +242,82 @@ public partial class MoveManager : Node2D {
         return moves;
     }
 
+    /* 
+    REturns the castling availability of the current board (either as set by FEN or by any change in movement) 
+        Requirements for castle:
+            - Neither the king nor rook at the respective position have moved
+            - Space between both is empty
+            - King position and castling position for king are not under attack
+    */
     public List<Move> get_castle(Vector2 current_position, Piece p) {
         // king initiated castle from unmoved king. no index check required
         List<Move> moves = new List<Move>();
         if (p.get_piece_type() == Piece.PieceType.King && p.get_state() == Piece.State.Unmoved) {
             Tuple<int, int> kp = p.get_board_position();
-            Piece rookr = board.BoardTiles[kp.Item2, kp.Item1 + 3];
-            Piece rookl = board.BoardTiles[kp.Item2, kp.Item1 - 4];
+            
+            Piece rookr = board.BoardTiles[kp.Item1, kp.Item2 + 3];
+            Piece rookl = board.BoardTiles[kp.Item1, kp.Item2 - 4];
+            
 
             /* no piece type check required, since an unmoved piece in that position is by default
-                a rook
+                a rook. Don't allow castling through pieces by default
             */
             if (rookr != null && rookr.get_state() == Piece.State.Unmoved) 
             {
+                
                 Move move = new Move(p, board);
-                Tuple<Move, int> sq_move = move.move_if_valid(current_position + new Vector2(0, current_piece.get_piece_color() * board.CELL_SIZE));
-               
+                if ((board.BoardTiles[kp.Item1, kp.Item2 + 2] == null || board.BoardTiles[kp.Item1, kp.Item2 + 2].get_state() == Piece.State.Captured)
+                && (board.BoardTiles[kp.Item1, kp.Item2 + 1] == null || board.BoardTiles[kp.Item1, kp.Item2 + 1].get_state() == Piece.State.Captured)) {
+                    // right castle
+                    Tuple<Move, int> sq_move = move.move_if_valid(current_position + new Vector2(board.CELL_SIZE * 2, 0));
+                    if (sq_move != null && !board.is_checked((Piece.PieceColor) p.get_piece_color(), board.BoardTiles)
+                    && p.get_threats(p.get_board_position(), board.BoardTiles).Count == 0) {
+                        moves.Add(sq_move.Item1); 
+                        // add to movelist if king not in check, all tiles between king and rook are empty, and neither position is in check
+                    }
+                }
+            }
+
+            if (rookl != null && rookl.get_state() == Piece.State.Unmoved) 
+            {
+                Move move = new Move(p, board);
+                if ((board.BoardTiles[kp.Item1, kp.Item2 - 3] == null || board.BoardTiles[kp.Item1, kp.Item2 - 3].get_state() == Piece.State.Captured)
+                && (board.BoardTiles[kp.Item1, kp.Item2 - 2] == null || board.BoardTiles[kp.Item1, kp.Item2 - 2].get_state() == Piece.State.Captured)
+                && (board.BoardTiles[kp.Item1, kp.Item2 - 1] == null || board.BoardTiles[kp.Item1, kp.Item2 - 1].get_state() == Piece.State.Captured)) {
+                    // right castle
+                    Tuple<Move, int> sq_move = move.move_if_valid(current_position - new Vector2(board.CELL_SIZE * 2, 0));
+                    if (sq_move != null && !board.is_checked((Piece.PieceColor) p.get_piece_color(), board.BoardTiles)
+                    && p.get_threats(p.get_board_position(), board.BoardTiles).Count == 0) {
+                        moves.Add(sq_move.Item1); 
+                        // add to movelist if king not in check, all tiles between king and rook are empty, and neither position is in check
+                    }
+                }
             }
         }
+        castle_moves = moves;
+        return moves;
+    }
+
+    
+    public List<Move> get_en_passant(Vector2 current_position) {
+        
+        List<Move> moves = new List<Move>();
+        if (current_piece.get_piece_type() == Piece.PieceType.Pawn) {
+            Move move = new Move(current_piece, board);
+            Tuple<Move, int> sq_move = move.move_if_valid(current_position + new Vector2(-1, current_piece.get_piece_color()) * board.CELL_SIZE);
+            
+            Move move_2 = new Move(current_piece, board);
+            Tuple<Move, int> sq_move_2 = move_2.move_if_valid(current_position + new Vector2(1, current_piece.get_piece_color()) * board.CELL_SIZE);
+            
+            // only add move if the tile is the current enpassant square
+            if (sq_move != null && board.en_passant_square != null && sq_move.Item1.ToString().Equals(board.en_passant_square.ToString())) {moves.Add(sq_move.Item1);}
+            if (sq_move_2 != null && board.en_passant_square != null && sq_move_2.Item1.ToString().Equals(board.en_passant_square.ToString())){moves.Add(sq_move_2.Item1);}
+        }
+        enpassant_moves = moves; 
         return moves;
     }
 }
+
 
 
 // A sub class only intended to validate and check if a move calculated is legal or not.
@@ -281,6 +340,8 @@ public partial class Move : Node2D {
     // How do the indices work?
     //  --> Item2 first since its the "y" axis, but in a 2d array its the row array
     //  --> Item1 second since its the "x" axis, but in a 2d array its an index in the row array
+
+    // Returns the Move object to be made, and the int piece color of the 
     public Tuple<Move, int> move_if_valid(Vector2 physical_position) { 
 
         // move_position is a tuple containing the indexing positions of a move check

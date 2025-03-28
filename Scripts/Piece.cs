@@ -81,6 +81,8 @@ public partial class Piece : Node2D
 	// check if an enemy rook, queen is targetting horizontally/vertically
 	// and likewise for bishop, queen is targetting diagonally
 	// Returns true if there is a pin on Piece p, otherwise returns false
+	     // The second item in the tuple is the pinning piece
+
 	// sorry future me for the nested conditions, its the best i could do
 	// IMPORTANT: must modify if you are adding new pieces
 	public Tuple<bool, Piece> is_pinned(Piece p) {
@@ -170,8 +172,10 @@ public partial class Piece : Node2D
 		return new Tuple<bool, Piece>(false, null);
 	}
 
-	// Returns a List of threats (Pieces) in all possible directions
-	// in relation to the origin position (unrelated to piece type)
+	/* Returns a List of threats (Pieces) in all possible directions
+	 in relation to the origin position (unrelated to piece type)
+		Note that here, the input "origin" is obtained from Piece.get_board_position(), NOT from Move.get_tuple()
+	*/
 	public List<Piece> get_threats(Tuple<int, int> origin, Piece[,] board) {
 		List<Piece> threats = new List<Piece>();
 
@@ -337,6 +341,7 @@ public partial class Piece : Node2D
 		return this.pstate;
 	}
 
+
 	// returns the actual physics position vector of the current piece
 	public Vector2 get_vector_position() {
 		return GlobalPosition;
@@ -388,18 +393,22 @@ public partial class PieceHistory {
 	Piece p, c;
 	Tuple<int, int> pold, cold;
 
+	Piece.State pso, cso;
+
 	bool c_already_captured = false; // sometimes, unmaking a move causes a captured piece to be revealed
 
 
 	public PieceHistory() {
 		
 	}
-	public PieceHistory(Piece[,] board, Piece p, Piece c, Tuple<int, int> pold, Tuple<int, int> cold, bool c_cap) {
+	public PieceHistory(Piece[,] board, Piece p, Piece c, Tuple<int, int> pold, Tuple<int, int> cold, bool c_cap, Piece.State pso, Piece.State cso) {
 		this.board = board;
 		this.p = p;
 		this.c = c;
 		this.pold = pold;
 		this.cold = cold;
+		this.pso = pso;
+		this.cso = cso;
 		this.c_already_captured = c_cap;
 	}
 
@@ -424,5 +433,13 @@ public partial class PieceHistory {
 
 	public Tuple<int, int> get_cold_index() {
 		return cold;
+	}
+
+	public Piece.State get_pstate() {
+		return pso;
+	}
+
+	public Piece.State get_cstate() {
+		return cso;
 	}
 }

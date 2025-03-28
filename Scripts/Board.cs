@@ -5,6 +5,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http.Headers;
+using System.Reflection.Metadata.Ecma335;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 public partial class Board : Node2D
@@ -22,37 +24,26 @@ public partial class Board : Node2D
     public static Piece White_King; // Keep track of checks 
     public static Piece Black_King; // Keep track of checks
 
-    const string DEFAULT_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    const string DEFAULT_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // DO NOT CHANGE
 
-
-    public Label temp_label; // to show check and checkmate
+    public string fen = "rnbqkbn1/ppppp1pP/8/8/5pP1/8/PPPPPP1P/RNBQKBNR b KQkq g3 0 2"; // feel free to change this as long as it fits format
 
     public int CELL_SIZE = 32;
-    public override void _Ready()
-    {
-        base._Ready();
-        Label newLabel = new Label();
-        AddChild(newLabel);
-        newLabel.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        
-        newLabel.Position = new Vector2(300, 0);
-        newLabel.Size = new Vector2(121, 121); 
-        newLabel.Text = "";
-        temp_label = newLabel;
+    public int DIMENSION_X = 8;
+    public int DIMENSION_Y = 8;
 
-        
+    public Tuple<int, int> en_passant_square = null;
 
-    }
 
     // Constructor
-    public Board() {
-
-
-        BoardTiles = new Piece[8,8];
+    public Board(GameManager gm) {
+        this.gm = gm;
+        BoardTiles = new Piece[DIMENSION_Y,DIMENSION_X];
         CreateBoard(); // tiles
-        ReadForsythEdwards(DEFAULT_FEN); // pieces
+        ReadForsythEdwards(fen); // pieces
         
     }
+    
 
     // Generates a board of 64 tiles for the chess board
 	public void CreateBoard() {
@@ -71,26 +62,59 @@ public partial class Board : Node2D
         }
     }
 
+    private string get_chess_rankfile(Tuple<int, int> move) {
+		string rankfile = ((char) (97 + move.Item2)) + Math.Abs(8 - move.Item1).ToString();
+		return rankfile;
+	}
+
+
+    /*
+        Given a string input in the format charint, returns a tuple representing the ARRAY INDEX
+            of that tile.
+        Example: 
+           - the input "g3" should map to the colloquial tile (7, 3) from white perspective, however
+            the array indices of the tile at "g3" is actually (5, 6) when accounting for array technicalities 
+    */
+    private Tuple<int, int> get_chess_tuple(string rankfile) {
+        if (rankfile == null || rankfile.Length == 1) {
+            return null; 
+        }
+        char[] components = rankfile.ToCharArray();
+        Tuple<int, int> tuple = new Tuple<int, int>('8' - components[1], components[0] - 97);
+        return tuple;
+    }
+
     /*
     Assumes standard FEN notation, separated by a / symbol
     modify if you adding a new piece or osmething
 
     adds pieces to PieceRefs dict
     sets King references
+
+    default "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     */
     private void ReadForsythEdwards(String FEN) {
 
         String PiecePositions = FEN.Split(" ")[0]; // the piece board itself
         String CurrentMove = FEN.Split(" ")[1]; // White or Black to move
-        String CastlingAvailability = FEN.Split(" ")[2]; // KQ or kq for black and white 
-        //String EnPassantSquare = FEN.Split(" ")[3];
-        int HalfMove = Int32.Parse(FEN.Split(" ")[4]); // 50 move draw
+        char[] CastlingAvailability = FEN.Split(" ")[2].ToCharArray(); // KQ or kq for black and white 
+        String EnPassantSquare = FEN.Split(" ")[3];
+        int HalfMove = Int32.Parse(FEN.Split(" ")[4]); // 50 move draw (UNUSED)
         int FullMove = Int32.Parse(FEN.Split(" ")[5]); // total moves
 
+        // set the move and turns
+        gm.set_moves(FullMove * 2); // gm actually keeps track of total "moves" (as in each turn)
+        
+        // set the current turn
+        if (CurrentMove.Equals("b")) {gm.set_current_turn(GameManager.Turn.Black);}
+        else if (CurrentMove.Equals("w")) {gm.set_current_turn(GameManager.Turn.White);}
+
+        en_passant_square = get_chess_tuple(EnPassantSquare); // gets the en passant square as array indices
+
+
+        // iterating variables
         int col = 0;
         int row = 0;
-
-
         int color = 0;
         int type = 0;
 
@@ -136,9 +160,19 @@ public partial class Board : Node2D
                     
                     Vector2 pvec = new Vector2(col * 32, row * 32);
                     Piece add_piece = new Piece(pvec, type, color, this, component);
+
                     BoardTiles[row, col] = add_piece;
                     AddChild(add_piece);
                     add_piece.set_board_position(new Tuple<int, int>(row, col)); // sets the index
+
+                    // Castling availability
+                    if (char.ToLower(component).Equals('r') && ((color == -1 && col == 0 && !CastlingAvailability.Contains('q')) || 
+                    (color == -1 && col == DIMENSION_X - 1 && !CastlingAvailability.Contains('k')) ||
+                    (color == 1 && col == 0 && !CastlingAvailability.Contains('Q')) || 
+                    (color == 1 && col == DIMENSION_X - 1 && !CastlingAvailability.Contains('K')))) {
+                        add_piece.ChangeState(Piece.State.Placed);
+                    }
+
 
 
                     // I FORGOT WHY color is swapped. but just roll with it
@@ -149,10 +183,7 @@ public partial class Board : Node2D
                         PieceRefs[-color].Add(add_piece);
                     }
                     else{
-                        List<Piece> pieces = new List<Piece>
-                        {
-                            add_piece
-                        };
+                        List<Piece> pieces = new List<Piece>{add_piece};
                         PieceRefs.Add(-color, pieces);
                     }
 
@@ -242,7 +273,6 @@ public partial class Board : Node2D
     }
 
     /* 
-        TODO: finish this
         given an input Piece.PieceColor color, return whether the King
         associated with the color is under attack.
     */
@@ -273,6 +303,7 @@ public partial class Board : Node2D
             - color: the Piece.PieceColor OPPOSITE of the color of the Piece attacker
             - board: the board to check for intersection
             - attacker: the piece attacking the king of color "color"
+                - Naturally, there should only be 1 piece "attacking" the king at the same time
         How does it work?
             - assumes the game is over; the king has been checkmated
             - loops over all possible conditions that would render the king not checkmated
@@ -451,11 +482,14 @@ public partial class Board : Node2D
 
         // if at any point the king can make a valid move, he is not checkmated
         foreach (Move m in mv.get_all_movement()) {
-            if (king.get_threats(m.get_tuple(), board).Count == 0) {
+            
+            // Note that since m.get_tuple() returns the x, y, you have to swap due since indexces are y, x
+            Tuple<int, int> swap_idx = new Tuple<int, int>(m.get_tuple().Item2, m.get_tuple().Item1);
+            if (king.get_threats(swap_idx, board).Count == 0) {
+                
                 return false;
             }
         }
-
         //CHECKMATE
         return true; // the game is over
     }
@@ -529,9 +563,13 @@ public partial class Board : Node2D
 
         Tuple<int, int> old_mti = p.get_board_position(); // get this piece's previous position
 
+        Piece.State pso = p.get_state(); // save old state
+        Piece.State cso = Piece.State.Unmoved;
+
         
         // Delete captured piece if it exists, and remove its reference from PieceRefs
         if (BoardTiles[mti.Item1, mti.Item2] != null) {
+            cso = BoardTiles[mti.Item1, mti.Item2].get_state(); 
             if (BoardTiles[mti.Item1, mti.Item2].get_state() == Piece.State.Captured) {c_already_captured = true;}
             // prevent forward capturing  by pawns
             if (!(p.get_piece_type() == Piece.PieceType.Pawn && p.get_board_position().Item2 == mti.Item2)) {
@@ -552,7 +590,7 @@ public partial class Board : Node2D
         //GD.Print(BoardTiles[mti.Item1, mti.Item2]);  should be the piece you just moved
         //GD.Print(BoardTiles[old_mti.Item1, old_mti.Item2]); should be the old piece
 
-        return new PieceHistory(old_board, p, captured_piece, oldBoardPosition, mti, c_already_captured); // returns the old board
+        return new PieceHistory(old_board, p, captured_piece, oldBoardPosition, mti, c_already_captured, pso, cso); // returns the old board
     }
 
     // Given an input PieceHistory object (see implementation in Piece.cs
@@ -565,16 +603,21 @@ public partial class Board : Node2D
         Piece cold = phist.get_capture();
         Tuple<int, int> pidx = phist.get_piece_index();
         Tuple<int, int> cidx = phist.get_cold_index();
+
+        Piece.State pso = phist.get_pstate();
+        Piece.State cso = phist.get_cstate();
         bool already_captured = phist.already_captured(); // dont reveal if piece already captured
 
         if (cold != null && !already_captured) {
-            cold.ChangeState(Piece.State.Placed); // add the piece back
+            cold.ChangeState(cso); // add the piece back
             PieceRefs[cold.get_piece_color()].Add(cold); // add it back to pieceRefs too
         }
         
         pold.set_board_position(pidx);
         Vector2 vectorposition = new Vector2(pidx.Item2 * CELL_SIZE, pidx.Item1 * CELL_SIZE);
         pold.set_vector_position(vectorposition);
+        
+        pold.ChangeState(pso); // reset states
 
         BoardTiles = history_board;
 

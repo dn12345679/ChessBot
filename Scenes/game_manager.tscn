@@ -1,34 +1,100 @@
-[gd_scene load_steps=2 format=3 uid="uid://e6rnledsxnof"]
+[gd_scene load_steps=3 format=3 uid="uid://e6rnledsxnof"]
 
 [ext_resource type="Script" path="res://Scripts/GameManager.cs" id="1_fqoao"]
+[ext_resource type="Script" path="res://Scripts/PawnPromotion.cs" id="2_8eunx"]
 
 [node name="GameManager" type="Node2D"]
 script = ExtResource("1_fqoao")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(224, 120)
+enabled = false
 zoom = Vector2(2, 2)
 
-[node name="GameMenu" type="Control" parent="."]
+[node name="GameInfo" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 0
-offset_left = 384.0
-offset_top = 128.0
-offset_right = 424.0
-offset_bottom = 168.0
+offset_left = 320.0
+offset_top = 72.0
+offset_right = 504.0
+offset_bottom = 256.0
 
-[node name="Menu" type="Button" parent="GameMenu"]
+[node name="CheckState" type="Label" parent="GameInfo"]
 layout_mode = 0
-offset_right = 8.0
-offset_bottom = 8.0
-text = "Menu
-"
+offset_top = -88.0
+offset_right = 40.0
+offset_bottom = -65.0
+theme_override_colors/font_color = Color(0, 1, 0, 1)
 
-[node name="GameState" type="Label" parent="GameMenu"]
+[node name="MoveCounter" type="Label" parent="GameInfo"]
+layout_mode = 0
+offset_top = -48.0
+offset_right = 68.0
+offset_bottom = 1.0
+
+[node name="TurnActive" type="Label" parent="GameInfo"]
+layout_mode = 0
+offset_top = 24.0
+offset_right = 40.0
+offset_bottom = 47.0
+theme_override_colors/font_color = Color(1, 1, 0, 1)
+
+[node name="LastMove" type="Label" parent="GameInfo"]
+layout_mode = 0
+offset_top = 64.0
+offset_right = 88.0
+offset_bottom = 87.0
+
+[node name="PawnPromotion" type="Control" parent="."]
+process_mode = 3
 visible = false
+z_index = 3
+layout_mode = 3
+anchors_preset = 0
+offset_right = 64.0
+offset_bottom = 64.0
+script = ExtResource("2_8eunx")
+
+[node name="Background" type="ColorRect" parent="PawnPromotion"]
+z_index = -1
 layout_mode = 0
-offset_left = -32.0
-offset_top = 40.0
-offset_right = 118.0
-offset_bottom = 63.0
-text = "Draw, Nobody wins"
+offset_left = 184.0
+offset_top = 16.0
+offset_right = 352.0
+offset_bottom = 168.0
+color = Color(0.239216, 0.239216, 0.239216, 1)
+
+[node name="TitleText" type="Label" parent="PawnPromotion"]
+z_index = 2
+layout_mode = 0
+offset_left = 200.0
+offset_top = 32.0
+offset_right = 329.0
+offset_bottom = 55.0
+text = "Pawn Promotion"
+
+[node name="Selection" type="OptionButton" parent="PawnPromotion"]
+layout_mode = 0
+offset_left = 216.0
+offset_top = 72.0
+offset_right = 320.0
+offset_bottom = 92.0
+item_count = 4
+selected = 0
+popup/item_0/text = "Queen"
+popup/item_0/id = 0
+popup/item_1/text = "Rook"
+popup/item_1/id = 1
+popup/item_2/text = "Knight"
+popup/item_2/id = 2
+popup/item_3/text = "Bishop"
+popup/item_3/id = 3
+
+[node name="Confirm" type="Button" parent="PawnPromotion"]
+layout_mode = 0
+offset_left = 216.0
+offset_top = 120.0
+offset_right = 320.0
+offset_bottom = 152.0
+text = "Confirm
+"
