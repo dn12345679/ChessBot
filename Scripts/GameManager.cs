@@ -31,6 +31,8 @@ public partial class GameManager : Node2D
 
 	private Control game_info;
 
+	private Button menu_button;
+
 	// Stats
 	int total_moves = 0; // moves = total_plies/ 2
 	float time_secs = 0; // keep track of time 
@@ -54,6 +56,8 @@ public partial class GameManager : Node2D
 		AddChild(player);
 
 		game_info = GetNode<Control>("GameInfo");
+		menu_button = game_info.GetNode<Button>("Menu");
+		menu_button.Connect("pressed", new Callable(this, MethodName.return_to_menu));
 
 		promotion = GetNode<PawnPromotion>("PawnPromotion");
 		promotion.board = board;
@@ -97,9 +101,13 @@ public partial class GameManager : Node2D
 		
 	}
 
+	public void return_to_menu() {
+		GetTree().ReloadCurrentScene();
+	}
+
 
 	/*
-
+		Promote the given pawn p. Assumes that p is a pawn in a legal position for promotion
 	*/
 	public void promote_pawn(Piece p) {
 		promotion.StartPromotionWizard(p);
