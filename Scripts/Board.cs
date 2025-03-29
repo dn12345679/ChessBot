@@ -19,7 +19,7 @@ public partial class Board : Node2D
     public static Piece White_King; // Keep track of checks 
     public static Piece Black_King; // Keep track of checks
 
-    const string DEFAULT_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // DO NOT CHANGE
+    const string DEFAULT_FEN = "rnbqkbnr/pppppppp/8/4q3/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // DO NOT CHANGE
 
     public string fen = DEFAULT_FEN; // feel free to change this as long as it fits format
 

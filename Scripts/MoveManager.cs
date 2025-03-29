@@ -4,7 +4,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Runtime.Serialization;
+using System.Xml.Schema;
+
 
 public partial class MoveManager : Node2D {
     
@@ -18,6 +21,49 @@ public partial class MoveManager : Node2D {
     private List<Move> knight_moves = new List<Move>();
     private List<Move> castle_moves = new List<Move>();
     private List<Move> enpassant_moves = new List<Move>();
+
+    /* 
+        Optimization:
+            - Check if piece is pinned:
+                - If king is not checked, moves are only valid if its in the direction of the attacker
+                - if king is checked, DON"T get any moves for this piece. 
+            - Check if piece is not pinned:
+                - if king is not checked, CONTINUE, free to move
+                - if king is checked, moves are only valid if it intersects with the vector between the king and attacker
+    */
+    // 
+    private bool validate_optimizer(Move move) {
+        if (board.move_validation(current_piece, new Tuple<int, int>(move.get_tuple().Item2, move.get_tuple().Item1))) {
+            return true;
+        }
+        return false;
+    }
+    // Related to above method. Early return optimization
+    private bool pinned_and_checked() {
+        if (current_piece.is_pinned(current_piece).Item1)
+        {
+            if (board.is_checked((Piece.PieceColor)current_piece.get_piece_color(), board.BoardTiles)) {
+                return true;
+            }                    
+        }
+        return false;
+    }
+
+    private bool is_attacker_square(Move move) {
+        List<Piece> attackers = new List<Piece>();
+        Tuple<int, int> idx_corrected = new Tuple<int, int>(move.get_tuple().Item2, move.get_tuple().Item1);
+        switch ((Piece.PieceColor) current_piece.get_piece_color()) {
+            case Piece.PieceColor.Black:
+                attackers = Board.Black_King.get_threats(Board.Black_King.get_board_position(), board.BoardTiles);
+                break;
+            case Piece.PieceColor.White:
+                attackers = Board.White_King.get_threats(Board.White_King.get_board_position(), board.BoardTiles);
+                break;
+        }
+        
+        return attackers.Count == 0 || attackers.Any(item => item.get_board_position().ToString().Equals(idx_corrected.ToString()));
+    }
+
     public MoveManager(Piece piece, Board board) {
         this.board = board;
         this.current_piece = piece;
@@ -56,6 +102,7 @@ public partial class MoveManager : Node2D {
         return moves;
     }
 
+
     // gets all the possible cardinal movements of a piece.
     // Does not account for things like "king exposure"
     // See Piece.cs to see how "king exposure" is handled
@@ -64,7 +111,7 @@ public partial class MoveManager : Node2D {
         // Either add a new case, or change the Move class. Dependnet on Piece.cs 
     // Handles Pawn First move 
     public List<Move> get_cardinal_movement(Vector2 current_position) {
-        List<Move> moves= new List<Move>();
+        List<Move> moves = new List<Move>();
 
         switch (current_piece.get_piece_type()) {
             // pawn and first tmove of pawn
@@ -75,17 +122,21 @@ public partial class MoveManager : Node2D {
                     break; // don't bother checking double square. If blocked then break
                 }
                 else{
-                    moves.Add(sq_move.Item1);
+                    
+                    if (validate_optimizer(move)) {
+                        moves.Add(sq_move.Item1);
+                    }
                     // only second move if unmoved
                     if (current_piece.get_state() == Piece.State.Unmoved) {
                         Move move_double = new Move(current_piece, board);
                         Tuple<Move, int> sq_move_double = move_double.move_if_valid(current_position + new Vector2(0, current_piece.get_piece_color() * board.CELL_SIZE * 2));
-                        if (sq_move_double != null) {
+                        if (sq_move_double != null && validate_optimizer(move_double)) {
                             // valid double, add it
                             moves.Add(sq_move_double.Item1); 
                         }            
                     }
                 }
+
                 break;
             // rook, king, queen
             case Piece.PieceType.Rook:
@@ -99,6 +150,9 @@ public partial class MoveManager : Node2D {
                                                        new Vector2(1, 0), 
                                                        new Vector2(0, 1), 
                                                        new Vector2(-1, 0) };
+
+                if (pinned_and_checked()) { return moves;}
+
                 for (int dir = 0; dir < 4; dir++) {
                     // loops starting from 1
                     for (int tile = 1; tile < 8; tile++) {
@@ -110,12 +164,16 @@ public partial class MoveManager : Node2D {
                             break;    
                         }
                         
-                        // optimization 3/25/25, don't add moves to king if it results in a check
+                        // optimization 3/25/25, don't add moves to king moves if it results in a check
                         if (current_piece.get_piece_type() == Piece.PieceType.King) {
                             Tuple<int, int> tup2move = new Tuple<int, int>(sq_move_default.Item1.get_tuple().Item2, sq_move_default.Item1.get_tuple().Item1);
                             if (board.is_checked((Piece.PieceColor) current_piece.get_piece_color(), board.BoardTiles, tup2move)) {
                                 break;
                             }
+                        }
+                        // only need to check the very first tile.
+                        if (tile == 1 && !validate_optimizer(sq_move_default.Item1)) { 
+                            break;
                         }
                         moves.Add(sq_move_default.Item1); // valid move
                         
@@ -157,8 +215,8 @@ public partial class MoveManager : Node2D {
                 Tuple<Move, int> sq_move_2 = move_2.move_if_valid(current_position + new Vector2(1, current_piece.get_piece_color()) * board.CELL_SIZE);
                 
                 // only add move if the tile contains the opposite color
-                if (sq_move != null && sq_move.Item2 != (int) Piece.PieceColor.Default) {moves.Add(sq_move.Item1);}
-                if (sq_move_2 != null && sq_move_2.Item2 != (int) Piece.PieceColor.Default){moves.Add(sq_move_2.Item1);}
+                if (sq_move != null && sq_move.Item2 != (int) Piece.PieceColor.Default && validate_optimizer(sq_move.Item1)) {moves.Add(sq_move.Item1);}
+                if (sq_move_2 != null && sq_move_2.Item2 != (int) Piece.PieceColor.Default && validate_optimizer(sq_move_2.Item1)){moves.Add(sq_move_2.Item1);}
                 
                 break;
             // rook, king, queen
@@ -191,7 +249,10 @@ public partial class MoveManager : Node2D {
                                 break;
                             }
                         }
-                        
+                        // optimize 3/28/25
+                        if (tile == 1 && !validate_optimizer(sq_move_default.Item1)) { 
+                            break;
+                        }
                         moves.Add(sq_move_default.Item1); // valid move
                         
                         // Since King can only move 1 square, break early
@@ -220,6 +281,9 @@ public partial class MoveManager : Node2D {
         // This works very differently than the other 2, so figure it out urself ig 
     public List<Move> get_knight_movement(Vector2 current_position) {
         List<Move> moves = new List<Move>();
+
+        if (current_piece.is_pinned(current_piece).Item1) {return moves;}
+
         if (current_piece.get_piece_type() == Piece.PieceType.Knight) {
             Vector2[] km = new Vector2[8] {
                 new Vector2(2, 1),  new Vector2(2, -1),  // Right-Up, Right-Down
@@ -235,7 +299,11 @@ public partial class MoveManager : Node2D {
                 if(sq_move == null) {
                     continue;
                 }
-                moves.Add(sq_move.Item1); // valid move
+
+                if (validate_optimizer(sq_move.Item1) && is_attacker_square(sq_move.Item1)) { 
+                    moves.Add(sq_move.Item1); // valid move
+                }
+               
             }
         }
         knight_moves = moves; // important: sets the knight moves so its accessible
@@ -316,6 +384,7 @@ public partial class MoveManager : Node2D {
         enpassant_moves = moves; 
         return moves;
     }
+
 }
 
 

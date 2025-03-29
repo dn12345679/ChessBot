@@ -76,90 +76,81 @@ public partial class Player : Node2D
                     
                     // check conditions to make the move if it exists
                     // MOVE must exist for move_validation to even run (see Board.cs)
-                    if (valid_moves != null && move != null && valid_moves.get_move_list_strings().Contains(move.ToString())) {
-                        success = board.move_validation(selected_piece, move);                
-                    }
+                    success = valid_moves != null && move != null && valid_moves.get_move_list_strings().Contains(move.ToString());          
+                    
 
                     // if the move was valid, make changes on the board! and reset
                     if (success) {
                         selected_piece.phist = board.make_move(selected_piece, move); // assign phist MOVE IS MADE HERE
                         selected_piece.ChangeState(Piece.State.Placed);                    
 
-                        // Check if the same color King is under attack
-                        if (board.is_checked((Piece.PieceColor) selected_piece.get_piece_color(), board.BoardTiles) == true) {
-                            board.unmake_move(selected_piece.phist);
-                            reset_selected_piece();
-                            return;
-                        }
-                        // CHECK for CHECK AND CHECKMATE HERE !!!
-                            // also include other logic like castling and en passant and promotion
-                        else{
-                            
-                            // CASTLE LOGIC, 2 tile distance. No need to fix king position 
+                        //
+                        
+                        // CASTLE LOGIC, 2 tile distance. No need to fix king position 
 
-                            if (selected_piece.get_piece_type() == Piece.PieceType.King &&
-                            Math.Abs(selected_piece.get_vector_position().X - original_position.X) == board.CELL_SIZE * 2 
-                            && !board.is_checked((Piece.PieceColor)selected_piece.get_piece_color(), board.BoardTiles,
-                            new Tuple<int, int>((int)original_position.Y / 32, (int)original_position.X / 32)))  
-                            {
-                                if (Math.Abs(move.Item2 - 7) < Math.Abs(move.Item2) && board.BoardTiles[move.Item1, board.DIMENSION_X - 1] != null
-                                && board.BoardTiles[move.Item1, board.DIMENSION_X - 1].get_state() == Piece.State.Unmoved) {
-                                    Piece rookr = board.BoardTiles[move.Item1, board.DIMENSION_X - 1];
-                                    Tuple<int, int> castle_right = new Tuple<int, int>(move.Item1, move.Item2 - 1);
-                                    rookr.phist = board.make_move(rookr, castle_right);
-                                    rookr.ChangeState(Piece.State.Placed);
-                                }
-                                else {
-                                    Piece rookl = board.BoardTiles[move.Item1, 0];
-                                    Tuple<int, int> castle_left = new Tuple<int, int>(move.Item1, move.Item2 + 1);
-                                    rookl.phist = board.make_move(rookl, castle_left);
-                                    rookl.ChangeState(Piece.State.Placed);
-                                }
+                        if (selected_piece.get_piece_type() == Piece.PieceType.King &&
+                        Math.Abs(selected_piece.get_vector_position().X - original_position.X) == board.CELL_SIZE * 2 
+                        && !board.is_checked((Piece.PieceColor)selected_piece.get_piece_color(), board.BoardTiles,
+                        new Tuple<int, int>((int)original_position.Y / 32, (int)original_position.X / 32)))  
+                        {
+                            if (Math.Abs(move.Item2 - 7) < Math.Abs(move.Item2) && board.BoardTiles[move.Item1, board.DIMENSION_X - 1] != null
+                            && board.BoardTiles[move.Item1, board.DIMENSION_X - 1].get_state() == Piece.State.Unmoved) {
+                                Piece rookr = board.BoardTiles[move.Item1, board.DIMENSION_X - 1];
+                                Tuple<int, int> castle_right = new Tuple<int, int>(move.Item1, move.Item2 - 1);
+                                rookr.phist = board.make_move(rookr, castle_right);
+                                rookr.ChangeState(Piece.State.Placed);
                             }
-
-                            // ENPASSANT LOGIC, no null check since en passant square auto updated, perspective of attacker
-                            if (board.en_passant_square != null && selected_piece.get_piece_type() == Piece.PieceType.Pawn && 
-                            board.en_passant_square.ToString().Equals(move.ToString())) {
-                                Piece passed_pawn = board.BoardTiles[move.Item1 - selected_piece.get_piece_color(), move.Item2];
-                                passed_pawn.ChangeState(Piece.State.Captured);   
-                            }
-                            board.en_passant_square = null; // always set en passant to null, opporunity passes
-                                // set en passant square from perspective of setter
-                            if (selected_piece.get_piece_type() == Piece.PieceType.Pawn 
-                                && Math.Abs(selected_piece.get_vector_position().Y - original_position.Y) == board.CELL_SIZE * 2 ) 
-                            {
-                                board.en_passant_square = new Tuple<int, int>(move.Item1 - selected_piece.get_piece_color(), move.Item2);
-                            }
-
-                            // PAWN PROMOTION LOGIC, no color check required since pawns naturally cant go backwards
-                            if (selected_piece.get_piece_type() == Piece.PieceType.Pawn ) {
-                                if (move.Item1 == 0 || move.Item1 == board.DIMENSION_Y) {
-                                    board.gm.promote_pawn(selected_piece);
-                                    
-                                }
-                            } // also remember to check for checks and checkmates after
-
-
-                            // CHECKING LOGIC
-
-                            // get the king of opposite color, you are the attacker
-                            // also get the color of the possible blockers
-                            Piece king = (selected_piece.get_piece_color() == (int) Piece.PieceColor.White) ? Board.Black_King : Board.White_King;
-                            Piece.PieceColor col = (selected_piece.get_piece_color() == (int) Piece.PieceColor.White) ? Piece.PieceColor.Black : Piece.PieceColor.White;
-                            // handle check and checkmate
-
-                            state = "";
-
-                            // state set here. Perspective of hte attacker
-                            if (board.is_checked(col, board.BoardTiles)) {
-                                state = "Check";
-                                if (board.is_checkmated(col, board.BoardTiles, king.get_threats(king.get_board_position(), board.BoardTiles)[0])) {
-                                    GameManager.GameState gs = (selected_piece.get_piece_color() == (int)Piece.PieceColor.White) ? GameManager.GameState.White_win : GameManager.GameState.Black_win;
-                                    board.gm.set_state(gs);
-                                    state = "Checkmate";
-                                }
+                            else {
+                                Piece rookl = board.BoardTiles[move.Item1, 0];
+                                Tuple<int, int> castle_left = new Tuple<int, int>(move.Item1, move.Item2 + 1);
+                                rookl.phist = board.make_move(rookl, castle_left);
+                                rookl.ChangeState(Piece.State.Placed);
                             }
                         }
+
+                        // ENPASSANT LOGIC, no null check since en passant square auto updated, perspective of attacker
+                        if (board.en_passant_square != null && selected_piece.get_piece_type() == Piece.PieceType.Pawn && 
+                        board.en_passant_square.ToString().Equals(move.ToString())) {
+                            Piece passed_pawn = board.BoardTiles[move.Item1 - selected_piece.get_piece_color(), move.Item2];
+                            passed_pawn.ChangeState(Piece.State.Captured);   
+                        }
+                        board.en_passant_square = null; // always set en passant to null, opporunity passes
+                            // set en passant square from perspective of setter
+                        if (selected_piece.get_piece_type() == Piece.PieceType.Pawn 
+                            && Math.Abs(selected_piece.get_vector_position().Y - original_position.Y) == board.CELL_SIZE * 2 ) 
+                        {
+                            board.en_passant_square = new Tuple<int, int>(move.Item1 - selected_piece.get_piece_color(), move.Item2);
+                        }
+
+                        // PAWN PROMOTION LOGIC, no color check required since pawns naturally cant go backwards
+                        if (selected_piece.get_piece_type() == Piece.PieceType.Pawn ) {
+                            if (move.Item1 == 0 || move.Item1 == board.DIMENSION_Y) {
+                                board.gm.promote_pawn(selected_piece);
+                                
+                            }
+                        } // also remember to check for checks and checkmates after
+
+
+                        // CHECKING LOGIC
+
+                        // get the king of opposite color, you are the attacker
+                        // also get the color of the possible blockers
+                        Piece king = (selected_piece.get_piece_color() == (int) Piece.PieceColor.White) ? Board.Black_King : Board.White_King;
+                        Piece.PieceColor col = (selected_piece.get_piece_color() == (int) Piece.PieceColor.White) ? Piece.PieceColor.Black : Piece.PieceColor.White;
+                        // handle check and checkmate
+
+                        state = "";
+
+                        // state set here. Perspective of hte attacker
+                        if (board.is_checked(col, board.BoardTiles)) {
+                            state = "Check";
+                            if (board.is_checkmated(col, board.BoardTiles, king.get_threats(king.get_board_position(), board.BoardTiles)[0])) {
+                                GameManager.GameState gs = (selected_piece.get_piece_color() == (int)Piece.PieceColor.White) ? GameManager.GameState.White_win : GameManager.GameState.Black_win;
+                                board.gm.set_state(gs);
+                                state = "Checkmate";
+                            }
+                        }
+                        
 
                         // EVERYTHING HERE MEANS PLAYER SUCCESS
                         board.gm.alternate_turn(); // change turns()
