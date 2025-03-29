@@ -22,11 +22,21 @@ offset_bottom = 648.0
 
 [node name="PlayButton" type="Button" parent="MenuItems"]
 layout_mode = 0
-offset_left = 448.0
+offset_left = 192.0
 offset_top = 256.0
-offset_right = 704.0
+offset_right = 448.0
 offset_bottom = 384.0
-text = "Play"
+text = "Play Classic
+"
+
+[node name="AIPlayButton" type="Button" parent="MenuItems"]
+layout_mode = 0
+offset_left = 512.0
+offset_top = 256.0
+offset_right = 768.0
+offset_bottom = 384.0
+text = "Play vs Bot
+"
 
 [node name="TItle" type="Label" parent="MenuItems"]
 layout_mode = 0

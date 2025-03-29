@@ -1,12 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Diagnostics.Tracing;
 using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 
 public partial class GameManager : Node2D
 {
@@ -51,9 +46,6 @@ public partial class GameManager : Node2D
 		chess_board = board; // sets the board ref
 		style_pieces((int) current_turn);
 		prf = board.PieceRefs; // get the piece refs for easy access
-
-		Player player = new Player(board);
-		AddChild(player);
 
 		game_info = GetNode<Control>("GameInfo");
 		menu_button = game_info.GetNode<Button>("Menu");
@@ -101,6 +93,26 @@ public partial class GameManager : Node2D
 		
 	}
 
+	
+	public void set_players(String p1, String p2) {
+		string[] players = new string[2] {p1, p2};
+		Piece.PieceColor curr_color = Piece.PieceColor.White;
+		
+		foreach (string player in players) {
+			switch (player) {
+				case "Player":
+					Player player_human = new Player(chess_board, curr_color);
+					AddChild(player_human);
+					break;
+				case "AI":
+					Random player_random = new Random(chess_board, curr_color);
+					AddChild(player_random);
+					break;
+			}
+			curr_color = Piece.PieceColor.Black; // switch the color
+		}
+	}
+	
 	public void return_to_menu() {
 		GetTree().ReloadCurrentScene();
 	}
