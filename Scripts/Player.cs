@@ -91,7 +91,7 @@ public partial class Player : Node2D
                         if (selected_piece.get_piece_type() == Piece.PieceType.King &&
                         Math.Abs(selected_piece.get_vector_position().X - original_position.X) == board.CELL_SIZE * 2 
                         && !board.is_checked((Piece.PieceColor)selected_piece.get_piece_color(), board.BoardTiles,
-                        new Tuple<int, int>((int)original_position.Y / 32, (int)original_position.X / 32)))  
+                        new Tuple<int, int>((int)original_position.Y / board.CELL_SIZE, (int)original_position.X / board.CELL_SIZE)).Item1)  
                         {
                             if (Math.Abs(move.Item2 - 7) < Math.Abs(move.Item2) && board.BoardTiles[move.Item1, board.DIMENSION_X - 1] != null
                             && board.BoardTiles[move.Item1, board.DIMENSION_X - 1].get_state() == Piece.State.Unmoved) {
@@ -142,7 +142,7 @@ public partial class Player : Node2D
                         state = "";
 
                         // state set here. Perspective of hte attacker
-                        if (board.is_checked(col, board.BoardTiles)) {
+                        if (board.is_checked(col, board.BoardTiles).Item1) {
                             state = "Check";
                             if (board.is_checkmated(col, board.BoardTiles, king.get_threats(king.get_board_position(), board.BoardTiles)[0])) {
                                 GameManager.GameState gs = (selected_piece.get_piece_color() == (int)Piece.PieceColor.White) ? GameManager.GameState.White_win : GameManager.GameState.Black_win;

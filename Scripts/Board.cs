@@ -19,7 +19,7 @@ public partial class Board : Node2D
     public static Piece White_King; // Keep track of checks 
     public static Piece Black_King; // Keep track of checks
 
-    const string DEFAULT_FEN = "rnbqkbnr/pppppppp/8/4q3/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // DO NOT CHANGE
+    const string DEFAULT_FEN = "rnbqkbnr/pppppppp/8/4q3/8/6q1/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // DO NOT CHANGE
 
     public string fen = DEFAULT_FEN; // feel free to change this as long as it fits format
 
@@ -233,54 +233,97 @@ public partial class Board : Node2D
                 - Check if the 16 possible directions contain an enemy piece that can capture AFTER making the move
                 
     */
-    public bool move_validation(Piece p, Tuple<int, int> mti) {
-        // TODO:
-        // validation:
-            // move does not land on a same color piece
-            // move does not open up weakness to King (same color)
+    public bool move_validation(Piece p, Tuple<int, int> mti, Tuple<bool, List<Piece>> check_info) {
+    /* 
+        Optimization:
+            - Check if piece is pinned:
+                - If king is not checked, moves are only valid if its in the direction of the attacker
+                - if king is checked, DON"T get any moves for this piece. 
+            - Check if piece is not pinned:
+                - if king is not checked, CONTINUE, free to move
+                - if king is checked, moves are only valid if it intersects with the vector between the king and attacker
+    */
+
+        if (p.get_piece_type() == Piece.PieceType.King) {
+            if (check_info.Item1 == true) {
+                foreach (Piece attacker in check_info.Item2) {
+                    if (!is_between_king_attacker(p, mti)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        // not possible to generate a legal move if the king is threatened by more than 1 piece
+        if (check_info.Item2.Count > 1) {
+            return false;
+        }
+        
 
         // if the move can capture or move in the same direction as the pinning piece, 
         // , then it can still be valid!!!
         if (p.is_pinned(p).Item1 == true) {
-            // Item2 not null here by the nature that Item1 is true (check Piece.cs)
-            Tuple<int, int> pin_tuple = p.is_pinned(p).Item2.get_board_position(); // Item2 is the pinning piece
-
-            // Linear algebra time:
-               // the vector between point "pinner" and "pinned" is elementwise vector subtraction
-            Vector2 dir2pin = new Vector2(pin_tuple.Item1 - mti.Item1, pin_tuple.Item2 - mti.Item2); 
-
-                // also want vector between king and the pinned piece
-            Tuple<int, int> king = (p.get_piece_color() == (int) Piece.PieceColor.White) ? Board.White_King.get_board_position() : Board.Black_King.get_board_position();
-            Vector2 dir2king = new Vector2(pin_tuple.Item1 - king.Item1, pin_tuple.Item2 - king.Item2);
-
-                // 2 vectors are parallel if arc cosine of v1 dot v2 is equal to abs(v1 dot v2)
-                // EASY: if their cross produoct v1 X v2 is 0
-
-            // then return if their angle is 0 (cross prod). If so, then the move was valid
-            return dir2pin.AngleTo(dir2king) == 0;
+            GD.Print("noo");
+            if (check_info.Item1 == true) {return false;}
+            
+            // if the piece is pinned, and the king is not checked, make sure the move stays within king/attacker
+            return is_between_king_attacker(p, mti);
             }
         // if the piece is not pinned by a pinning piece
         if (p.is_pinned(p).Item1 == false) { 
-            return true; 
+            
+            // TODO: 30/3/2025
+            /*
+                - handle king check. No need to check if move aligns with attacker if king
+                - finish true check case. Use above code to copy and make sure it works
+            */
+            GD.Print("okay");
+            if (check_info.Item1 == true) {
+            // Item2 not null here by the nature that Item1 is true (check Piece.cs)
+                return is_between_king_attacker(p, mti);
+            }
+
+            return true; // valid move, no check no pink
+
             } // successful move
         return false; // false = invalid move, there is a pin or something
+    }
+
+    private bool is_between_king_attacker(Piece p, Tuple<int, int> mti) {
+        GD.Print("yeah");
+        // Item2 not null here by the nature that Item1 is true (check Piece.cs)
+        Tuple<int, int> pin_tuple = p.is_pinned(p).Item2.get_board_position(); // Item2 is the pinning piece
+
+        // Linear algebra time:
+            // the vector between point "pinner" and "pinned" is elementwise vector subtraction
+        Vector2 dir2pin = new Vector2(pin_tuple.Item1 - mti.Item1, pin_tuple.Item2 - mti.Item2); 
+
+            // also want vector between king and the pinned piece
+        Tuple<int, int> king = (p.get_piece_color() == (int) Piece.PieceColor.White) ? Board.White_King.get_board_position() : Board.Black_King.get_board_position();
+        Vector2 dir2king = new Vector2(pin_tuple.Item1 - king.Item1, pin_tuple.Item2 - king.Item2);
+
+            // 2 vectors are parallel if arc cosine of v1 dot v2 is equal to abs(v1 dot v2)
+            // EASY: if their cross produoct v1 X v2 is 0
+
+        // then return if their angle is 0 (cross prod). If so, then the move was valid
+        return dir2pin.AngleTo(dir2king) == 0;
     }
 
     /* 
         given an input Piece.PieceColor color, return whether the King
         associated with the color is under attack.
     */
-    public bool is_checked(Piece.PieceColor color, Piece[,] board, Tuple<int, int> pos = null) {
+    public Tuple<bool, List<Piece>> is_checked(Piece.PieceColor color, Piece[,] board, Tuple<int, int> pos = null) {
 
         switch (color) {
             case Piece.PieceColor.Black:
                 if (pos == null) {pos = Black_King.get_board_position();}
-                return Black_King.get_threats(pos, board).Count > 0;
+                return new Tuple<bool, List<Piece>>(Black_King.get_threats(pos, board).Count > 0, Black_King.get_threats(pos, board));
             case Piece.PieceColor.White:
                 if (pos == null) {pos = White_King.get_board_position();}
-                return White_King.get_threats(pos, board).Count > 0;
+                return new Tuple<bool, List<Piece>>(White_King.get_threats(pos, board).Count > 0, White_King.get_threats(pos, board));
         }
-        return false;
+        return new Tuple<bool, List<Piece>>(false, null);
     }
 
 
@@ -437,8 +480,6 @@ public partial class Board : Node2D
             mvm.get_cardinal_movement(original_position); // set all cardinal
             mvm.get_knight_movement(original_position);
             mvm.get_intermediate_movement(original_position);
-            //GD.Print(p.get_piece_type());
-            //GD.Print(String.Join(", ", mvm.get_move_list_strings()));
             // SEPERATE CONDITION FOR PAWNS 
             if (p.get_piece_type() != Piece.PieceType.Pawn) {
                 if (mvm.get_move_list_strings().Any(to_cover.Select(t => $"({t.Item1}, {t.Item2})").ToList().Contains)) {
@@ -546,7 +587,7 @@ public partial class Board : Node2D
             Piece representing the OLD AND NEW CAPTURED PIECE (or null)
         */
     public PieceHistory make_move(Piece p, Tuple<int, int> mti) {
-        if (!move_validation(p, mti)) { return new PieceHistory();} // if its not valid, then just return
+        
         Vector2 newPosition = new Vector2(mti.Item2 * CELL_SIZE, mti.Item1 * CELL_SIZE); // new position to move to
         
         Tuple<int, int> oldBoardPosition = p.get_board_position(); // just multiply by CELL_SIZE for vector

@@ -88,7 +88,7 @@ public partial class PawnPromotion : Control
 		// handle check and checkmate
 		string state = "";
 		// state set here. Perspective of hte attacker
-		if (board.is_checked(color, board.BoardTiles)) {
+		if (board.is_checked(color, board.BoardTiles).Item1) {
 			state = "Check";
 			if (board.is_checkmated(color, board.BoardTiles, king.get_threats(king.get_board_position(), board.BoardTiles)[0])) {
 				GameManager.GameState gs = (pold.get_piece_color() == (int)Piece.PieceColor.White) ? GameManager.GameState.White_win : GameManager.GameState.Black_win;

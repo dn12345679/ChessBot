@@ -33,7 +33,8 @@ public partial class MoveManager : Node2D {
     */
     // 
     private bool validate_optimizer(Move move) {
-        if (board.move_validation(current_piece, new Tuple<int, int>(move.get_tuple().Item2, move.get_tuple().Item1))) {
+        if (board.move_validation(current_piece, new Tuple<int, int>(move.get_tuple().Item2, move.get_tuple().Item1), 
+        get_check_info(new Tuple<int, int>(move.get_tuple().Item2, move.get_tuple().Item1)))) {
             return true;
         }
         return false;
@@ -42,11 +43,19 @@ public partial class MoveManager : Node2D {
     private bool pinned_and_checked() {
         if (current_piece.is_pinned(current_piece).Item1)
         {
-            if (board.is_checked((Piece.PieceColor)current_piece.get_piece_color(), board.BoardTiles)) {
+            if (board.is_checked((Piece.PieceColor)current_piece.get_piece_color(), board.BoardTiles).Item1) {
                 return true;
             }                    
         }
         return false;
+    }
+
+    private Tuple<bool, List<Piece>> get_check_info(Tuple<int, int> move) {
+        GD.Print(board);
+        GD.Print(move);
+        GD.Print(board.is_checked((Piece.PieceColor) current_piece.get_piece_color(), board.BoardTiles, move));
+        GD.Print(" is checked " + String.Join(", ", board.is_checked((Piece.PieceColor) current_piece.get_piece_color(), board.BoardTiles, move).Item2));
+        return board.is_checked((Piece.PieceColor) current_piece.get_piece_color(), board.BoardTiles, move);
     }
 
     private bool is_attacker_square(Move move) {
@@ -122,7 +131,7 @@ public partial class MoveManager : Node2D {
                     break; // don't bother checking double square. If blocked then break
                 }
                 else{
-                    
+                    GD.Print(move);
                     if (validate_optimizer(move)) {
                         moves.Add(sq_move.Item1);
                     }
@@ -167,7 +176,7 @@ public partial class MoveManager : Node2D {
                         // optimization 3/25/25, don't add moves to king moves if it results in a check
                         if (current_piece.get_piece_type() == Piece.PieceType.King) {
                             Tuple<int, int> tup2move = new Tuple<int, int>(sq_move_default.Item1.get_tuple().Item2, sq_move_default.Item1.get_tuple().Item1);
-                            if (board.is_checked((Piece.PieceColor) current_piece.get_piece_color(), board.BoardTiles, tup2move)) {
+                            if (board.is_checked((Piece.PieceColor) current_piece.get_piece_color(), board.BoardTiles, tup2move).Item1) {
                                 break;
                             }
                         }
@@ -245,7 +254,7 @@ public partial class MoveManager : Node2D {
                         // optimization 3/25/25, don't add moves to king if it results in a check
                         if (current_piece.get_piece_type() == Piece.PieceType.King) {
                             Tuple<int, int> tup2move = new Tuple<int, int>(sq_move_default.Item1.get_tuple().Item2, sq_move_default.Item1.get_tuple().Item1);
-                            if (board.is_checked((Piece.PieceColor) current_piece.get_piece_color(), board.BoardTiles, tup2move)) {
+                            if (board.is_checked((Piece.PieceColor) current_piece.get_piece_color(), board.BoardTiles, tup2move).Item1) {
                                 break;
                             }
                         }
@@ -338,7 +347,7 @@ public partial class MoveManager : Node2D {
                 && (board.BoardTiles[kp.Item1, kp.Item2 + 1] == null || board.BoardTiles[kp.Item1, kp.Item2 + 1].get_state() == Piece.State.Captured)) {
                     // right castle
                     Tuple<Move, int> sq_move = move.move_if_valid(current_position + new Vector2(board.CELL_SIZE * 2, 0));
-                    if (sq_move != null && !board.is_checked((Piece.PieceColor) p.get_piece_color(), board.BoardTiles)
+                    if (sq_move != null && !board.is_checked((Piece.PieceColor) p.get_piece_color(), board.BoardTiles).Item1
                     && p.get_threats(p.get_board_position(), board.BoardTiles).Count == 0) {
                         moves.Add(sq_move.Item1); 
                         // add to movelist if king not in check, all tiles between king and rook are empty, and neither position is in check
@@ -354,7 +363,7 @@ public partial class MoveManager : Node2D {
                 && (board.BoardTiles[kp.Item1, kp.Item2 - 1] == null || board.BoardTiles[kp.Item1, kp.Item2 - 1].get_state() == Piece.State.Captured)) {
                     // right castle
                     Tuple<Move, int> sq_move = move.move_if_valid(current_position - new Vector2(board.CELL_SIZE * 2, 0));
-                    if (sq_move != null && !board.is_checked((Piece.PieceColor) p.get_piece_color(), board.BoardTiles)
+                    if (sq_move != null && !board.is_checked((Piece.PieceColor) p.get_piece_color(), board.BoardTiles).Item1
                     && p.get_threats(p.get_board_position(), board.BoardTiles).Count == 0) {
                         moves.Add(sq_move.Item1); 
                         // add to movelist if king not in check, all tiles between king and rook are empty, and neither position is in check
