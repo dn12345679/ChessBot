@@ -19,7 +19,7 @@ public partial class Board : Node2D
     public static Piece White_King; // Keep track of checks 
     public static Piece Black_King; // Keep track of checks
 
-    const string DEFAULT_FEN = "rnbqkbnr/pppppppp/8/4q3/8/6q1/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // DO NOT CHANGE
+    const string DEFAULT_FEN = "rnbqkbnr/pppppppp/8/4q3/1n6/6q1/PPPPnPPP/RNBQKBNR b KQkq - 0 1"; // DO NOT CHANGE
 
     public string fen = DEFAULT_FEN; // feel free to change this as long as it fits format
 
@@ -243,18 +243,21 @@ public partial class Board : Node2D
                 - if king is not checked, CONTINUE, free to move
                 - if king is checked, moves are only valid if it intersects with the vector between the king and attacker
     */
-
+        // If at any point the move is in between any of the 2 attackers, the move is invalid 
         if (p.get_piece_type() == Piece.PieceType.King) {
             if (check_info.Item1 == true) {
                 foreach (Piece attacker in check_info.Item2) {
-                    if (!is_between_king_attacker(p, mti)) {
-                        return true;
+
+                    if (attacker.get_piece_type() != Piece.PieceType.Knight && is_between_king_attacker(p, mti, attacker.get_board_position())) {
+                        return false;
                     }
+
                 }
+                return true; // otherwise the move is valid if none of the attackers cover the square
             }
         }
 
-        // not possible to generate a legal move if the king is threatened by more than 1 piece
+        // piece is not a king at this point. If the king has more than 1 attacker, blocking is not an option
         if (check_info.Item2.Count > 1) {
             return false;
         }
@@ -263,24 +266,17 @@ public partial class Board : Node2D
         // if the move can capture or move in the same direction as the pinning piece, 
         // , then it can still be valid!!!
         if (p.is_pinned(p).Item1 == true) {
-            GD.Print("noo");
             if (check_info.Item1 == true) {return false;}
             
             // if the piece is pinned, and the king is not checked, make sure the move stays within king/attacker
-            return is_between_king_attacker(p, mti);
+            return is_between_king_attacker(p, mti, p.is_pinned(p).Item2.get_board_position());
             }
         // if the piece is not pinned by a pinning piece
         if (p.is_pinned(p).Item1 == false) { 
             
-            // TODO: 30/3/2025
-            /*
-                - handle king check. No need to check if move aligns with attacker if king
-                - finish true check case. Use above code to copy and make sure it works
-            */
-            GD.Print("okay");
             if (check_info.Item1 == true) {
             // Item2 not null here by the nature that Item1 is true (check Piece.cs)
-                return is_between_king_attacker(p, mti);
+                return is_between_king_attacker(p, mti, check_info.Item2[0].get_board_position());
             }
 
             return true; // valid move, no check no pink
@@ -289,10 +285,9 @@ public partial class Board : Node2D
         return false; // false = invalid move, there is a pin or something
     }
 
-    private bool is_between_king_attacker(Piece p, Tuple<int, int> mti) {
-        GD.Print("yeah");
+    private bool is_between_king_attacker(Piece p, Tuple<int, int> mti, Tuple<int, int> apos) {
         // Item2 not null here by the nature that Item1 is true (check Piece.cs)
-        Tuple<int, int> pin_tuple = p.is_pinned(p).Item2.get_board_position(); // Item2 is the pinning piece
+        Tuple<int, int> pin_tuple = apos; // Item2 is the pinning piece
 
         // Linear algebra time:
             // the vector between point "pinner" and "pinned" is elementwise vector subtraction
@@ -306,7 +301,9 @@ public partial class Board : Node2D
             // EASY: if their cross produoct v1 X v2 is 0
 
         // then return if their angle is 0 (cross prod). If so, then the move was valid
-        return dir2pin.AngleTo(dir2king) == 0;
+        // Checking this manner may often result in issues if the mti and apos are the same,
+            // , so in that case check if the mti and apos are equal, then capture is possible
+        return dir2pin.AngleTo(dir2king) == 0 || mti.ToString().Equals(apos.ToString());
     }
 
     /* 
@@ -468,9 +465,8 @@ public partial class Board : Node2D
             to_cover.Add(new Tuple<int, int>((int) curr_pos.Y / CELL_SIZE, (int) curr_pos.X / CELL_SIZE));
             curr_pos += new Vector2(dir.X, dir.Y) * CELL_SIZE;
         }
-        //GD.Print("Flag 3");
         // step 4: check if any of the "possible" pieces
-        //GD.Print(String.Join(", ", to_cover));
+
         // NOTE FUTURE ME: optimize this by using  the fact that "check" only happens from 1 direction
         foreach (Piece p in possible) {
            
@@ -488,7 +484,7 @@ public partial class Board : Node2D
                 }
             }
             else {
-
+                // pawn logic
                 foreach (Move m in mvm.get_all_movement()) {
                     // Woah this is weird; its because the tuple format for "Move"
                         // objects are different from the tuple format for "get_board_position()"
@@ -514,7 +510,7 @@ public partial class Board : Node2D
          // get the king position we found
         mv.get_cardinal_movement(kpos); // set all cardinal
         mv.get_intermediate_movement(kpos);     
-
+        
         // if at any point the king can make a valid move, he is not checkmated
         foreach (Move m in mv.get_all_movement()) {
             
@@ -622,8 +618,8 @@ public partial class Board : Node2D
         BoardTiles[mti.Item1, mti.Item2] = p;
         BoardTiles[old_mti.Item1, old_mti.Item2] = captured_piece;
         
-        //GD.Print(BoardTiles[mti.Item1, mti.Item2]);  should be the piece you just moved
-        //GD.Print(BoardTiles[old_mti.Item1, old_mti.Item2]); should be the old piece
+        //(BoardTiles[mti.Item1, mti.Item2]);  should be the piece you just moved
+        //(BoardTiles[old_mti.Item1, old_mti.Item2]); should be the old piece
 
         return new PieceHistory(old_board, p, captured_piece, oldBoardPosition, mti, c_already_captured, pso, cso); // returns the old board
     }

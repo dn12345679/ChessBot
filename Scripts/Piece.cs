@@ -194,11 +194,10 @@ public partial class Piece : Node2D
 				// valid enemy piece if its not null, opposite color, and not captured
 				if (p != null && p.get_state() != State.Captured) {
 					if (p.get_piece_color() == get_piece_color()) {
-						GD.Print(p.get_board_position() + " " + p + "");
 						break; // blocked threat, break here
 					}
 
-					if (p.get_piece_color() != get_piece_color()) {
+					else if (p.get_piece_color() != get_piece_color()) {
 						switch (p.get_piece_type()) {
 							case Piece.PieceType.Rook:
 							    if (dir < 4) {
@@ -220,11 +219,11 @@ public partial class Piece : Node2D
 							case Piece.PieceType.Bishop:
 								if (dir >= 4 && dir <= 7) {
 									threats.Add(p);
-								}
+								} 	
 								break;
 							case Piece.PieceType.Queen:
 								if (dir <= 7) {
-									GD.Print(p.get_board_position() + "  aaaa");
+									
 									threats.Add(p);
 								}
 								

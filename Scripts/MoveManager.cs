@@ -33,8 +33,10 @@ public partial class MoveManager : Node2D {
     */
     // 
     private bool validate_optimizer(Move move) {
+        
         if (board.move_validation(current_piece, new Tuple<int, int>(move.get_tuple().Item2, move.get_tuple().Item1), 
-        get_check_info(new Tuple<int, int>(move.get_tuple().Item2, move.get_tuple().Item1)))) {
+        get_check_info())) {
+            
             return true;
         }
         return false;
@@ -50,12 +52,8 @@ public partial class MoveManager : Node2D {
         return false;
     }
 
-    private Tuple<bool, List<Piece>> get_check_info(Tuple<int, int> move) {
-        GD.Print(board);
-        GD.Print(move);
-        GD.Print(board.is_checked((Piece.PieceColor) current_piece.get_piece_color(), board.BoardTiles, move));
-        GD.Print(" is checked " + String.Join(", ", board.is_checked((Piece.PieceColor) current_piece.get_piece_color(), board.BoardTiles, move).Item2));
-        return board.is_checked((Piece.PieceColor) current_piece.get_piece_color(), board.BoardTiles, move);
+    private Tuple<bool, List<Piece>> get_check_info() {
+        return board.is_checked((Piece.PieceColor) current_piece.get_piece_color(), board.BoardTiles);
     }
 
     private bool is_attacker_square(Move move) {
@@ -85,7 +83,7 @@ public partial class MoveManager : Node2D {
         List<string> moves = new List<string>();
 
         foreach (Move move in get_all_movement()) {
-            //GD.Print(move);
+
             moves.Add(move.ToString());
         }
         return moves;
@@ -131,7 +129,6 @@ public partial class MoveManager : Node2D {
                     break; // don't bother checking double square. If blocked then break
                 }
                 else{
-                    GD.Print(move);
                     if (validate_optimizer(move)) {
                         moves.Add(sq_move.Item1);
                     }
@@ -166,7 +163,6 @@ public partial class MoveManager : Node2D {
                     // loops starting from 1
                     for (int tile = 1; tile < 8; tile++) {
                         Move move_default = new Move(current_piece, board);
-                        //GD.Print(current_position + directions[dir] * board.CELL_SIZE * tile);
                         Tuple<Move, int> sq_move_default = move_default.move_if_valid(current_position + directions[dir] * board.CELL_SIZE * tile);
                         // early breaks prevent extra iterations
                         if(sq_move_default == null) {
@@ -244,7 +240,6 @@ public partial class MoveManager : Node2D {
                     // loops starting from 1
                     for (int tile = 1; tile < 8; tile++) {
                         Move move_default = new Move(current_piece, board);
-                        //GD.Print(current_position + directions[dir] * board.CELL_SIZE * tile);
                         Tuple<Move, int> sq_move_default = move_default.move_if_valid(current_position + directions[dir] * board.CELL_SIZE * tile);
                         // early breaks prevent extra iterations
                         if(sq_move_default == null) {
@@ -302,14 +297,13 @@ public partial class MoveManager : Node2D {
             };
             foreach (Vector2 move_vec in km) {
                 Move move = new Move(current_piece, board);
-                //GD.Print(current_position + directions[dir] * board.CELL_SIZE * tile);
                 Tuple<Move, int> sq_move = move.move_if_valid(current_position + move_vec * board.CELL_SIZE);
                 // early breaks prevent extra iterations
                 if(sq_move == null) {
                     continue;
                 }
 
-                if (validate_optimizer(sq_move.Item1) && is_attacker_square(sq_move.Item1)) { 
+                if (is_attacker_square(sq_move.Item1)) { 
                     moves.Add(sq_move.Item1); // valid move
                 }
                
