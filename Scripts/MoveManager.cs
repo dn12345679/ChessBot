@@ -178,10 +178,9 @@ public partial class MoveManager : Node2D {
                             }
                         }
                         // only need to check the very first tile.
-                        if (tile == 1 && !validate_optimizer(sq_move_default.Item1)) { 
-                            break;
+                        if (validate_optimizer(sq_move_default.Item1)) { 
+                            moves.Add(sq_move_default.Item1); // valid move
                         }
-                        moves.Add(sq_move_default.Item1); // valid move
                         
                         // Since King can only move 1 square, break early
                         if (current_piece.get_piece_type() == Piece.PieceType.King) {
@@ -255,10 +254,10 @@ public partial class MoveManager : Node2D {
                             }
                         }
                         // optimize 3/28/25
-                        if (tile == 1 && !validate_optimizer(sq_move_default.Item1)) { 
-                            break;
+                        if (validate_optimizer(sq_move_default.Item1)) { 
+                            moves.Add(sq_move_default.Item1); // valid move
                         }
-                        moves.Add(sq_move_default.Item1); // valid move
+                        
                         
                         // Since King can only move 1 square, break early
                         if (current_piece.get_piece_type() == Piece.PieceType.King) {

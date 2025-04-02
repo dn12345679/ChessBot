@@ -13,7 +13,7 @@ config_version=5
 config/name="Chess"
 run/main_scene="res://Scenes/menu.tscn"
 config/features=PackedStringArray("4.2", "C#", "GL Compatibility")
-config/icon="res://Assets/icon.svg"
+config/icon="res://Assets/ChessPieces.png"
 
 [display]
 
