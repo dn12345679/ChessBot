@@ -51,6 +51,7 @@ public partial class PawnPromotion : Control
 
 	public void on_confirm_pressed() {
 		// first remove the old piece reference
+
 		if (board.PieceRefs.ContainsKey(pold.get_piece_color())) {
 			board.PieceRefs[pold.get_piece_color()].Remove(pold);
 		}
@@ -62,8 +63,7 @@ public partial class PawnPromotion : Control
 
 		Vector2 pvec = new Vector2(col * 32, row * 32);
 		Piece add_piece = new Piece(pvec, option.Item1, -pold.get_piece_color(), board, option.Item2);
-                    
-		
+	
 		board.AddChild(add_piece);
 		add_piece.set_board_position(new Tuple<int, int>(row, col)); // sets the index
 

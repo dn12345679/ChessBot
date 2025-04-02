@@ -84,7 +84,6 @@ public partial class Player : Node2D
                         selected_piece.phist = board.make_move(selected_piece, move); // assign phist MOVE IS MADE HERE
                         selected_piece.ChangeState(Piece.State.Placed);                    
 
-                        //
                         
                         // CASTLE LOGIC, 2 tile distance. No need to fix king position 
 

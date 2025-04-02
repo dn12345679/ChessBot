@@ -26,6 +26,13 @@ public partial class Piece : Node2D
 		Queen = 5, 
 		King = 6
 	}
+
+
+	/*
+		I messed up BAD here; piececolor should be swapped (white 1, black -1), so now
+		I have to remember to multiply by -1 when I use it anywhere else; otherwise I have to 
+		change everything :skull:
+	*/
 	public enum PieceColor
 	{
 		White = -1,
@@ -302,6 +309,7 @@ public partial class Piece : Node2D
 				col = 0;
 				break;
 		}
+		// Warning: sprites are scaled awkwardly
 		Rect2 region = new Rect2(new Vector2(col * 2560/6, row * 2560/6), new Vector2(2560/6, 2560/6));
 		sprite.Scale = new Vector2(0.0775f, 0.0775f);
 		Atlas.Region = region;
@@ -360,6 +368,7 @@ public partial class Piece : Node2D
 	public int get_piece_color() {
 		return (int) pcolor;
 	}	
+
 
 	// returns the PieceType of the current piece
 	public PieceType get_piece_type() {

@@ -19,7 +19,7 @@ public partial class Board : Node2D
     public static Piece White_King; // Keep track of checks 
     public static Piece Black_King; // Keep track of checks
 
-    const string DEFAULT_FEN = "rnbqkbnr/pppppppp/8/4q3/1n6/6q1/PPPPnPPP/RNBQKBNR b KQkq - 0 1"; // DO NOT CHANGE
+    const string DEFAULT_FEN = "rnbqkbn1/pppppp1P/8/4q3/1n6/6q1/PPPPnPPP/RNBQKBNR w KQkq - 0 1"; // DO NOT CHANGE
 
     public string fen = DEFAULT_FEN; // feel free to change this as long as it fits format
 
@@ -57,11 +57,12 @@ public partial class Board : Node2D
         }
     }
 
+
+    // Returns the rank, file in the form CHARINT (ex: e4)
     private string get_chess_rankfile(Tuple<int, int> move) {
 		string rankfile = ((char) (97 + move.Item2)) + Math.Abs(8 - move.Item1).ToString();
 		return rankfile;
 	}
-
 
     /*
         Given a string input in the format charint, returns a tuple representing the ARRAY INDEX
@@ -214,7 +215,7 @@ public partial class Board : Node2D
     
     }
 
-    // DOES NOT HANDLE IF THE MOVE IS POSSIBLE. Seee Player.cs for full implementation
+   
     // returns true if the move is valid
     // returns false if the move is invalid
     // IMPORTANT NOTE: the mti parameter is in the format (column, row) not (row, column)
@@ -248,7 +249,8 @@ public partial class Board : Node2D
             if (check_info.Item1 == true) {
                 foreach (Piece attacker in check_info.Item2) {
 
-                    if (attacker.get_piece_type() != Piece.PieceType.Knight && is_between_king_attacker(p, mti, attacker.get_board_position())) {
+                    if (is_between_king_attacker(p, mti, attacker.get_board_position())
+                    && !tuples_equal(mti, attacker.get_board_position())) {
                         return false;
                     }
 
@@ -276,6 +278,7 @@ public partial class Board : Node2D
             
             if (check_info.Item1 == true) {
             // Item2 not null here by the nature that Item1 is true (check Piece.cs)
+                GD.Print(is_between_king_attacker(p, mti, check_info.Item2[0].get_board_position()) + " " + p);
                 return is_between_king_attacker(p, mti, check_info.Item2[0].get_board_position());
             }
 
@@ -303,7 +306,7 @@ public partial class Board : Node2D
         // then return if their angle is 0 (cross prod). If so, then the move was valid
         // Checking this manner may often result in issues if the mti and apos are the same,
             // , so in that case check if the mti and apos are equal, then capture is possible
-        return dir2pin.AngleTo(dir2king) == 0 || mti.ToString().Equals(apos.ToString());
+        return dir2pin.AngleTo(dir2king) == 0 || tuples_equal(mti, apos);
     }
 
     /* 
@@ -571,6 +574,11 @@ public partial class Board : Node2D
     private bool on_segment(Vector2 A, Vector2 B, Vector2 C) {
         return Math.Min(A.X, B.X) <= C.X && C.X <= Math.Max(A.X, B.X) 
             && Math.Min(A.Y, B.Y) <= C.Y && C.Y <= Math.Max(A.Y, B.Y);
+    }
+
+    // Optimization: faster to compare across values of a tuple than string conversion
+    private bool tuples_equal(Tuple<int, int> A, Tuple<int, int> B) {
+        return A.Item1 == B.Item1 && A.Item2 == B.Item2;
     }
 
     // Commits changes to making a move, assumes all validation was complete

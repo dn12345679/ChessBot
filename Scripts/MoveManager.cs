@@ -97,8 +97,9 @@ public partial class MoveManager : Node2D {
     //  En passant: Not done
 
     public List<Move> get_all_movement() {
-        // possible idea: run get_cardinal_movement and get_intermediate_movement by default
-        // on current_piece
+
+
+
         List<Move> moves = new List<Move>();
         if (cardinal_moves != null && cardinal_moves.Count > 0) {moves.AddRange(cardinal_moves);} // add all cardinal moves if they exist
         if (intermediate_moves != null && intermediate_moves.Count > 0) {moves.AddRange(intermediate_moves);} // add all intermediate moves if they exist
@@ -303,7 +304,7 @@ public partial class MoveManager : Node2D {
                     continue;
                 }
 
-                if (is_attacker_square(sq_move.Item1)) { 
+                if (validate_optimizer(sq_move.Item1) && is_attacker_square(sq_move.Item1)) { 
                     moves.Add(sq_move.Item1); // valid move
                 }
                
@@ -323,6 +324,7 @@ public partial class MoveManager : Node2D {
     public List<Move> get_castle(Vector2 current_position, Piece p) {
         // king initiated castle from unmoved king. no index check required
         List<Move> moves = new List<Move>();
+        // i should have verified king position wasn't checked here, but I checked it below anyway
         if (p.get_piece_type() == Piece.PieceType.King && p.get_state() == Piece.State.Unmoved) {
             Tuple<int, int> kp = p.get_board_position();
             
