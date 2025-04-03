@@ -101,6 +101,9 @@ public partial class MoveManager : Node2D {
 
 
         List<Move> moves = new List<Move>();
+
+        
+
         if (cardinal_moves != null && cardinal_moves.Count > 0) {moves.AddRange(cardinal_moves);} // add all cardinal moves if they exist
         if (intermediate_moves != null && intermediate_moves.Count > 0) {moves.AddRange(intermediate_moves);} // add all intermediate moves if they exist
         if (knight_moves != null && knight_moves.Count > 0) {moves.AddRange(knight_moves);}
@@ -460,6 +463,15 @@ public partial class Move : Node2D {
     // returns the move tuple of this move
     public Tuple<int, int> get_tuple() {
         return move_position;
+    }
+
+    /* implemented this way too late
+     Since move_position and board_position are NOT the same,
+       it is required to get the swapped version since indices and position dont work the same
+    */
+    
+    public Tuple<int, int> get_tuple_reversed() {
+        return new Tuple<int, int>(move_position.Item2, move_position.Item1);
     }
     public override string ToString()
     {

@@ -201,6 +201,10 @@ public partial class Player : Node2D
         
     }
 
+    public Piece.PieceColor get_player_color() {
+        return color;
+    }
+
 
 
 

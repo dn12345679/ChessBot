@@ -11,7 +11,8 @@ public partial class GameManager : Node2D
 	
     public enum Turn {
         White = -1,
-        Black = 1
+        Black = 1,
+		NoTurn = 0
     }
 	public enum GameState{
 		White_win,
@@ -32,7 +33,13 @@ public partial class GameManager : Node2D
 	int total_moves = 0; // moves = total_plies/ 2
 	float time_secs = 0; // keep track of time 
 
-	public Dictionary<int, List<Piece>> prf;
+	public Dictionary<int, List<Piece>> prf; 
+
+
+	public Player p1;
+	public Player p2;
+
+	public List<Player> players;
 
 
 	// Called when the node enters the scene tree for the first time.
@@ -89,10 +96,21 @@ public partial class GameManager : Node2D
 			}
 		}
 
+		// 
+		if (p2.get_player_color() == turn2color(current_turn)) {
+				((Random) p2).make_move();
+		}	
+
+
 		
 		
 	}
 
+	public Piece.PieceColor turn2color(Turn t) {
+		if (t == Turn.White) {return Piece.PieceColor.White;}
+		else if (t == Turn.Black) {return Piece.PieceColor.Black;}
+		return Piece.PieceColor.Default;
+	}
 	
 	public void set_players(String p1, String p2) {
 		string[] players = new string[2] {p1, p2};
@@ -103,10 +121,14 @@ public partial class GameManager : Node2D
 				case "Player":
 					Player player_human = new Player(chess_board, curr_color);
 					AddChild(player_human);
+					if (this.p1 == null) { this.p1 = player_human;}
+					else if (this.p2 == null) { this.p2 = player_human;}
 					break;
 				case "AI":
 					Random player_random = new Random(chess_board, curr_color);
 					AddChild(player_random);
+					if (this.p1 == null) { this.p1 = player_random;}
+					else if (this.p2 == null) { this.p2 = player_random;}
 					break;
 			}
 			curr_color = Piece.PieceColor.Black; // switch the color
