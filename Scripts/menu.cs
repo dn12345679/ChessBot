@@ -4,6 +4,8 @@ public partial class menu : Control
 {
 	Button play;
 	Button play_bot;
+
+	Button play_bot2;
 	Control menuItems;
 
 	public GameManager scene;
@@ -18,16 +20,24 @@ public partial class menu : Control
 		play.Connect("pressed", new Callable(this, MethodName.on_play_pressed));
 
 		play_bot = menuItems.GetNode<Button>("AIPlayButton");
-		play_bot.Connect("pressed", new Callable(this, MethodName.on_play_ai_pressed));
+		play_bot.Connect("pressed", new Callable(this, MethodName.on_play_ai_random_pressed));
+
+		play_bot2 = menuItems.GetNode<Button>("AIPlayButton2");
+		play_bot2.Connect("pressed", new Callable(this, MethodName.on_play_ai_alphabeta_pressed));
 	}
 
 	public void on_play_pressed() {
 		init_scene();
 		scene.set_players("Player", "Player");
 	}
-	public void on_play_ai_pressed() {
+	public void on_play_ai_random_pressed() {
 		init_scene();
-		scene.set_players("Player", "AI");
+		scene.set_players("Player", "AIRandom");
+	}
+
+	public void on_play_ai_alphabeta_pressed() {
+		init_scene();
+		scene.set_players("Player", "AIAlphaBeta");
 	}
 
 	private void init_scene() {

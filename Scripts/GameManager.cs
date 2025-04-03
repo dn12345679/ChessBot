@@ -98,7 +98,7 @@ public partial class GameManager : Node2D
 
 		// 
 		if (p2.get_player_color() == turn2color(current_turn)) {
-				((Random) p2).make_move();
+			((AI) p2).make_move();
 		}	
 
 
@@ -124,11 +124,17 @@ public partial class GameManager : Node2D
 					if (this.p1 == null) { this.p1 = player_human;}
 					else if (this.p2 == null) { this.p2 = player_human;}
 					break;
-				case "AI":
+				case "AIRandom":
 					Random player_random = new Random(chess_board, curr_color);
 					AddChild(player_random);
 					if (this.p1 == null) { this.p1 = player_random;}
 					else if (this.p2 == null) { this.p2 = player_random;}
+					break;
+				case "AIAlphaBeta":
+					AlphaBeta player_ab = new AlphaBeta(chess_board, curr_color);
+					AddChild(player_ab);
+					if (this.p1 == null) { this.p1 = player_ab;}
+					else if (this.p2 == null) { this.p2 = player_ab;}
 					break;
 			}
 			curr_color = Piece.PieceColor.Black; // switch the color
