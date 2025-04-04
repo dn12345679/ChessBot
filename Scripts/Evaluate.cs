@@ -4,9 +4,12 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Threading;
+using Godot;
 
 public partial class Evaluate {
     Board board;
+
+    Piece[,] piece_board;
 
     public enum pieceVals {
         Pawn = 1,
@@ -76,6 +79,7 @@ public partial class Evaluate {
         {Piece.PieceType.Bishop,12},
         {Piece.PieceType.Rook, 6},
         {Piece.PieceType.Queen, 3},
+        {Piece.PieceType.King, 0}
     };
 
     public Dictionary<Piece.PieceType, double> KingShield = new Dictionary<Piece.PieceType,double>() {
@@ -92,8 +96,13 @@ public partial class Evaluate {
 
     }
 
-    public Evaluate(Board board) {
+    public Evaluate(Board board, Piece[,] override_board = null) {
         this.board = board;
+        if (override_board != null) {
+            this.piece_board = override_board;
+        }else {
+            this.piece_board = board.BoardTiles;
+        }
     }   
 
     public double eval() {
@@ -170,8 +179,8 @@ public partial class Evaluate {
             foreach (Piece p in plist) {
                 int[] PST_table = PST[p.get_piece_type()];
 
-                total += -p.get_piece_color() * PST_table[p.get_board_position().Item1* board.CELL_SIZE + 
-                                                        p.get_board_position().Item2];
+                total += -p.get_piece_color() * PST_table[p.get_board_position().Item1 + 
+                                                        p.get_board_position().Item2 * board.DIMENSION_X];
             }
         }
 
@@ -240,22 +249,22 @@ public partial class Evaluate {
 
     // helper method for Pawn score, but can be used by other methods if needed in tuning
     private bool Helper_is_hanging(Piece p) {
-        return p.get_allies(p.get_board_position(), board.BoardTiles).Count == 0
-        && p.get_threats(p.get_board_position(), board.BoardTiles).Count > 0;
+        return p.get_allies(p.get_board_position(), piece_board).Count == 0
+        && p.get_threats(p.get_board_position(), piece_board).Count > 0;
     }
 
     // returns whether the given piece p is contained within an empty rank in the direction to promotion
     private bool Helper_file_empty(Piece p) {
         if (p.get_piece_color() == (int) Piece.PieceColor.White) {
             for (int rank = p.get_board_position().Item1; rank > 0; rank-- ) {
-                if (board.BoardTiles[rank, p.get_board_position().Item2] != null) {
+                if (piece_board[rank, p.get_board_position().Item2] != null) {
                     return false;
                 }
             }
         }
         else{
             for (int rank = p.get_board_position().Item1; rank < board.CELL_SIZE; rank++ ) {
-                if (board.BoardTiles[rank, p.get_board_position().Item2] != null) {
+                if (piece_board[rank, p.get_board_position().Item2] != null) {
                     return false;
                 }
             }
@@ -302,17 +311,17 @@ public partial class Evaluate {
 
         // piece shield. Less weighting for stronger blockers
         foreach (Piece p in new List<Piece>(){Board.White_King, Board.Black_King,}) {
-            Tuple<int, int> wk = Board.White_King.get_board_position();
-            if (board.BoardTiles[wk.Item1 - 1 * -p.get_piece_color(), wk.Item2] != null) {
-                total += KingShield[board.BoardTiles[wk.Item1 - 1, wk.Item2].get_piece_type()]
+            Tuple<int, int> wk = p.get_board_position();
+            if (piece_board[wk.Item1 - 1 * -p.get_piece_color(), wk.Item2] != null) {
+                total += KingShield[piece_board[wk.Item1 - 1* -p.get_piece_color(), wk.Item2].get_piece_type()]
                 * -p.get_piece_color();     
             }
-            if (board.BoardTiles[wk.Item1 - 1 * -p.get_piece_color(), wk.Item2 - 1] != null) {
-                total += KingShield[board.BoardTiles[wk.Item1 - 1 * -p.get_piece_color(), wk.Item2 - 1].get_piece_type()]
+            if (piece_board[wk.Item1 - 1 * -p.get_piece_color(), wk.Item2 - 1] != null) {
+                total += KingShield[piece_board[wk.Item1 - 1 * -p.get_piece_color(), wk.Item2 - 1].get_piece_type()]
                 * -p.get_piece_color();     
             }
-            if (board.BoardTiles[wk.Item1 - 1 * -p.get_piece_color(), wk.Item2 + 1] != null) {
-                total += KingShield[board.BoardTiles[wk.Item1 - 1 * -p.get_piece_color(), wk.Item2 + 1].get_piece_type()]
+            if (piece_board[wk.Item1 - 1 * -p.get_piece_color(), wk.Item2 + 1] != null) {
+                total += KingShield[piece_board[wk.Item1 - 1 * -p.get_piece_color(), wk.Item2 + 1].get_piece_type()]
                 * -p.get_piece_color();     
             }
         }
@@ -340,9 +349,10 @@ public partial class Evaluate {
             {
                 if (p.get_piece_type() == Piece.PieceType.Rook) {
                     int file = p.get_board_position().Item1;
-                    for (int rank = 0; rank < board.CELL_SIZE; rank++) {
-                        if (board.BoardTiles[file, rank].get_piece_type() == Piece.PieceType.Pawn) {
-                            if (board.BoardTiles[file, rank].get_piece_color() == p.get_piece_color()) {
+                    for (int rank = 0; rank < board.DIMENSION_X; rank++) {
+
+                        if (piece_board[file, rank].get_piece_type() == Piece.PieceType.Pawn) {
+                            if (piece_board[file, rank].get_piece_color() == p.get_piece_color()) {
                                 total -= PAWN_PENALTY;
                             }
                             else{

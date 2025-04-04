@@ -39,6 +39,7 @@ text = "Play vs Random Bot
 "
 
 [node name="AIPlayButton2" type="Button" parent="MenuItems"]
+layout_mode = 0
 offset_left = 800.0
 offset_top = 256.0
 offset_right = 1056.0

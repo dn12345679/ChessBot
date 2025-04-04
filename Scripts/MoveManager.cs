@@ -480,6 +480,11 @@ public partial class Move : Node2D {
         return move_position;
     }
 
+    // returns the piece of this move
+    public Piece get_piece() {
+        return piece;
+    }
+
     /* implemented this way too late
      Since move_position and board_position are NOT the same,
        it is required to get the swapped version since indices and position dont work the same

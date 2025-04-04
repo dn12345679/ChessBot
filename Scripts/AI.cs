@@ -12,6 +12,8 @@ using System.Reflection;
      bool piece_picked = false; // there is a piece being selected
     public Piece selected_piece = null; // selected piece in play
 
+    public PieceHistory last_history = null;
+
     public MoveManager valid_moves; // movemanager for valid moves
     Vector2 original_position = Vector2.Zero; // selected piece original position
 
@@ -81,7 +83,9 @@ using System.Reflection;
         if (success) {
             selected_piece.phist = chess_board.make_move(selected_piece, move); // assign phist MOVE IS MADE HERE
             selected_piece.ChangeState(Piece.State.Placed);                    
-            
+
+           last_history = selected_piece.phist;
+
             // CASTLE LOGIC, 2 tile distance. No need to fix king position 
 
             if (selected_piece.get_piece_type() == Piece.PieceType.King &&
@@ -240,17 +244,91 @@ public partial class AlphaBeta : AI {
     Board chess_board;
     Piece.PieceColor color;
 
+    Evaluate eval;
+
     public AlphaBeta(Board chess_board, Piece.PieceColor color) : base(chess_board, color){
         this.chess_board = chess_board;
         this.color = color;
     }
 
     public override void make_move() {
-
+        GD.Print(alphabeta(null, -999999, 999999, 3, true));
     }
     public override List<Move> get_all_moves()
     {
-        throw new NotImplementedException();
+        List<Move> return_moves = new List<Move>();;
+        
+        foreach (Piece p in chess_board.PieceRefs[(int) color]) {
+            MoveManager mvm = new MoveManager(p, chess_board);
+            Vector2 original_position = p.get_vector_position();
+            mvm.get_cardinal_movement(original_position); // set all cardinal
+            mvm.get_intermediate_movement(original_position);
+            if (p.get_piece_type() == Piece.PieceType.Knight) {
+                mvm.get_knight_movement(original_position);
+            }
+            if (p.get_piece_type() == Piece.PieceType.King) {
+                mvm.get_castle(original_position, p);
+            }
+            if (p.get_piece_type() == Piece.PieceType.Pawn) {
+                mvm.get_en_passant(original_position);
+            }
+            foreach (Move m in mvm.get_all_movement()) {
+                return_moves.Add(m);
+            }
+        }
+
+        return return_moves;
+    }
+
+    public double alphabeta(PieceHistory node, double alpha, double beta, int depth, bool is_maximizing) {
+        if (depth == 0) {return evaluate(node.get_board());}
+
+        if (is_maximizing) {
+            double max_eval = -999999;
+            foreach (Move m in get_all_moves()) {
+                push_move(m);
+                double eval = alphabeta(last_history, alpha, beta, depth - 1, false);
+                chess_board.unmake_move(last_history);
+
+                max_eval = Math.Max(max_eval, eval);
+                alpha = Math.Max(alpha, eval);
+
+                if (beta <= alpha) {
+                    break;
+                }
+            }
+            return max_eval;
+        }
+
+        else {
+            double min_eval = 999999;
+            foreach (Move m in get_all_moves()) {
+                push_move(m);
+                double eval = alphabeta(last_history, alpha, beta, depth - 1, true);
+                chess_board.unmake_move(last_history);
+
+                min_eval = Math.Min(min_eval, eval);
+                beta = Math.Min(beta, eval);
+                if (beta <= alpha) {
+                    break;
+                }
+            }
+            return min_eval;            
+        }
+    }
+
+    private void push_move(Move m) {
+        GD.Print(m.get_piece());
+        GD.Print(m.get_tuple_reversed());
+        GD.Print(m.get_tuple());
+        set_selected_piece(m.get_piece());
+        place_selected_piece(m.get_tuple_reversed());
+
+    }
+
+    public double evaluate(Piece[,] array) {
+        eval = new Evaluate(chess_board, array);
+        return eval.eval();
     }
     
 }
