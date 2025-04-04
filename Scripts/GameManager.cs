@@ -261,6 +261,10 @@ public partial class GameManager : Node2D
 		total_moves = moves;
 	}
 
+	public int get_num_moves() {
+		return total_moves;
+	}
+
 	// returnns the current turn
     public Turn get_current_turn() {
 		return current_turn;

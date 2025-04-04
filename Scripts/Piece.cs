@@ -262,6 +262,94 @@ public partial class Piece : Node2D
 		return threats;
 	} 
 
+	/*
+	// YES, this code is just a copy of get_threats(), except the piece color condition is swapped
+		Returns a list of friendly pieces in all possible directions
+		in relation to the origin position (unrelated to piece type)
+			Note that here, the input "origin" is obtained form Piece.get_board_positioN(), NOT from Move.get_tuple()
+	*/
+	public List<Piece> get_allies(Tuple<int, int> origin, Piece[,] board) {
+		
+		// YES, this code is just a copy of get_threats(), except the piece color condition is swapped
+		List<Piece> threats = new List<Piece>();
+
+        Tuple<int, int>[] directions = new Tuple<int, int>[16] {
+            new Tuple<int, int>(0, -1), new Tuple<int, int>(1, 0), new Tuple<int, int>(0, 1), new Tuple<int, int>(-1, 0),   // Horizontal/Vertical
+            new Tuple<int, int>(-1, -1), new Tuple<int, int>(1, 1), new Tuple<int, int>(-1, 1), new Tuple<int, int>(1, -1),   // Diagonal
+            new Tuple<int, int>(2, 1), new Tuple<int, int>(2, -1), new Tuple<int, int>(-2, 1), new Tuple<int, int>(-2, -1),  // Knight moves
+            new Tuple<int, int>(1, 2), new Tuple<int, int>(1, -2), new Tuple<int, int>(-1, 2), new Tuple<int, int>(-1, -2)   // knight moves
+        };
+
+		for (int dir = 0; dir < directions.Length; dir++) {
+			for (int tile = 1; tile < 8; tile++) {
+				if (!Move.tuple_in_bounds(new Tuple<int, int>(origin.Item1 + directions[dir].Item1 * tile, origin.Item2 + directions[dir].Item2 * tile))) {continue;} // skip out of bounds
+				Piece p = board[origin.Item1 + directions[dir].Item1 * tile, origin.Item2 + directions[dir].Item2 * tile];
+
+				// YES, this code is just a copy of get_threats(), except the piece color condition is swapped
+				if (p != null && p.get_state() != State.Captured) {
+					if (p.get_piece_color() != get_piece_color()) {
+						break; 
+					}
+					// YES, this code is just a copy of get_threats(), except the piece color condition is swapped
+					else if (p.get_piece_color() == get_piece_color()) {
+						switch (p.get_piece_type()) {
+							case Piece.PieceType.Rook:
+							    if (dir < 4) {
+									threats.Add(p);
+								} // ONLY add if its a horizontal or vertical
+								break;
+							case Piece.PieceType.Pawn:
+								if (dir >= 4 && dir <= 7) {
+									if (p.get_piece_color() == (int) Piece.PieceColor.White && directions[dir].Item1 == 1 && tile == 1) {
+										// White pawns attack diagonally upward
+										threats.Add(p);
+									}
+									else if (p.get_piece_color() == (int) Piece.PieceColor.Black && directions[dir].Item1 == -1 && tile == 1) {
+										// Black pawns attack diagonally downward
+										threats.Add(p);
+									}
+								}
+								break;
+							case Piece.PieceType.Bishop:
+								if (dir >= 4 && dir <= 7) {
+									threats.Add(p);
+								} 	
+								break;
+							case Piece.PieceType.Queen:
+								if (dir <= 7) {
+									
+									threats.Add(p);
+								}
+								
+								break;
+							case Piece.PieceType.Knight:
+								if (dir >= 8) {
+									if  (tile == 1) {
+										threats.Add(p);
+									}
+								}
+								break;
+							case Piece.PieceType.King:
+								if (tile == 1 && dir <= 7) {
+									threats.Add(p);
+								}
+								break;
+						}
+
+						break; // ONLY remove if you plan to allow pieces to go through same color 
+					}
+					break;
+				}
+
+			}
+
+		}
+	    
+
+		return threats;
+	}
+
+
 
 	/*
 	Part of the initialization process of a Piece
