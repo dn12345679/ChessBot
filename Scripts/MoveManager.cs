@@ -102,6 +102,21 @@ public partial class MoveManager : Node2D {
 
         List<Move> moves = new List<Move>();
 
+        if (cardinal_moves == null) {
+            get_cardinal_movement(current_piece.get_vector_position());
+        }
+        if (intermediate_moves == null) {
+            get_intermediate_movement(current_piece.get_vector_position());
+        }
+        if (knight_moves == null) {
+            get_knight_movement(current_piece.get_vector_position());
+        }
+        if (castle_moves == null) {
+            get_castle(current_piece.get_vector_position(), current_piece);
+        }
+        if (enpassant_moves == null) {
+            get_en_passant(current_piece.get_vector_position());
+        }
         
 
         if (cardinal_moves != null && cardinal_moves.Count > 0) {moves.AddRange(cardinal_moves);} // add all cardinal moves if they exist

@@ -38,7 +38,6 @@ public partial class Board : Node2D
         ReadForsythEdwards(fen); // pieces
         
     }
-    
 
     // Generates a board of 64 tiles for the chess board
 	public void CreateBoard() {
