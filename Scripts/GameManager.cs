@@ -42,6 +42,9 @@ public partial class GameManager : Node2D
 	public List<Player> players;
 
 
+	public bool vs_bot = false;
+
+
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
@@ -97,7 +100,7 @@ public partial class GameManager : Node2D
 		}
 
 		// 
-		if (p2.get_player_color() == turn2color(current_turn)) {
+		if (vs_bot && p2.get_player_color() == turn2color(current_turn)) {
 			((AI) p2).make_move();
 		}	
 
@@ -268,6 +271,16 @@ public partial class GameManager : Node2D
 	// returnns the current turn
     public Turn get_current_turn() {
 		return current_turn;
+	}
+
+	public char turn_to_char() {
+		switch (current_turn) {
+			case Turn.White:
+				return 'w';
+			case Turn.Black:
+				return 'b';
+		}
+		return '-';
 	}
 
 	public void set_current_turn(Turn turn) {

@@ -244,6 +244,9 @@ public partial class AlphaBeta : AI {
     Board chess_board;
     Piece.PieceColor color;
 
+    Piece[,] simulate_board;
+    Dictionary<int, List<Piece>> simulate_pr;
+
     Evaluate eval;
 
     public AlphaBeta(Board chess_board, Piece.PieceColor color) : base(chess_board, color){
@@ -252,13 +255,13 @@ public partial class AlphaBeta : AI {
     }
 
     public override void make_move() {
-        GD.Print(alphabeta(null, -999999, 999999, 3, true));
+        GD.Print(alphabeta(null, -999999, 999999, 2, true));
     }
-    public override List<Move> get_all_moves()
+    public List<Move>  get_all_moves(Piece.PieceColor pcol)
     {
-        List<Move> return_moves = new List<Move>();;
+        List<Move> return_moves = new List<Move>();
         
-        foreach (Piece p in chess_board.PieceRefs[(int) color]) {
+        foreach (Piece p in chess_board.PieceRefs[(int) pcol]) {
             MoveManager mvm = new MoveManager(p, chess_board);
             Vector2 original_position = p.get_vector_position();
             mvm.get_cardinal_movement(original_position); // set all cardinal
@@ -280,37 +283,48 @@ public partial class AlphaBeta : AI {
         return return_moves;
     }
 
+    public override List<Move> get_all_moves(){ return new List<Move>();}
+
     public double alphabeta(PieceHistory node, double alpha, double beta, int depth, bool is_maximizing) {
         if (depth == 0) {return evaluate(node.get_board());}
 
         if (is_maximizing) {
+            if (depth == 0) {return evaluate(node.get_board());}
             double max_eval = -999999;
-            foreach (Move m in get_all_moves()) {
+            foreach (Move m in get_all_moves(Piece.PieceColor.Black)) {
                 push_move(m);
                 double eval = alphabeta(last_history, alpha, beta, depth - 1, false);
                 chess_board.unmake_move(last_history);
 
-                max_eval = Math.Max(max_eval, eval);
-                alpha = Math.Max(alpha, eval);
-
-                if (beta <= alpha) {
-                    break;
+                if (eval > max_eval) {
+                    max_eval = alpha;
+                    if (eval > alpha) {
+                        alpha = eval;
+                    }
+                }
+                if (eval >= beta) {
+                    return eval;
                 }
             }
             return max_eval;
         }
 
         else {
+            if (depth == 0) {return -evaluate(node.get_board());}
             double min_eval = 999999;
-            foreach (Move m in get_all_moves()) {
+            foreach (Move m in get_all_moves(Piece.PieceColor.White)) {
                 push_move(m);
                 double eval = alphabeta(last_history, alpha, beta, depth - 1, true);
                 chess_board.unmake_move(last_history);
 
-                min_eval = Math.Min(min_eval, eval);
-                beta = Math.Min(beta, eval);
-                if (beta <= alpha) {
-                    break;
+                if (eval < min_eval) {
+                    min_eval = eval;
+                    if (eval < beta) {
+                        beta = eval;
+                    }
+                }
+                if (eval <= alpha) {
+                    return eval;
                 }
             }
             return min_eval;            
@@ -318,17 +332,15 @@ public partial class AlphaBeta : AI {
     }
 
     private void push_move(Move m) {
-        GD.Print(m.get_piece());
-        GD.Print(m.get_tuple_reversed());
-        GD.Print(m.get_tuple());
         set_selected_piece(m.get_piece());
         place_selected_piece(m.get_tuple_reversed());
-
     }
 
     public double evaluate(Piece[,] array) {
         eval = new Evaluate(chess_board, array);
         return eval.eval();
     }
+
+
     
 }

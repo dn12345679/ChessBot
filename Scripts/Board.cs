@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 
@@ -31,10 +32,15 @@ public partial class Board : Node2D
 
 
     // Constructor
-    public Board(GameManager gm) {
+    public Board(GameManager gm, string fen = DEFAULT_FEN) {
         this.gm = gm;
         BoardTiles = new Piece[DIMENSION_Y,DIMENSION_X];
         CreateBoard(); // tiles
+
+        if (fen != null) {
+            this.fen = fen;
+        }
+
         ReadForsythEdwards(fen); // pieces
         
     }
@@ -59,6 +65,9 @@ public partial class Board : Node2D
 
     // Returns the rank, file in the form CHARINT (ex: e4)
     private string get_chess_rankfile(Tuple<int, int> move) {
+        if (move == null) {
+            return "-";
+        }
 		string rankfile = ((char) (97 + move.Item2)) + Math.Abs(8 - move.Item1).ToString();
 		return rankfile;
 	}
@@ -79,6 +88,83 @@ public partial class Board : Node2D
         return tuple;
     }
 
+
+    /* No inputs
+    
+    Writes the current board state to FEN notation. 
+    Format: pieces move castlestate enpassant move halfmove
+
+    */
+    public Tuple<Dictionary<int, List<Piece>>, string> WriteForsythEdwards() {
+        string FEN = "";
+        
+        // due to the nature of array indexing, iteration happens rank first
+        for (int rank = 0; rank < DIMENSION_Y; rank++) {
+            int blank_space = 0;
+            for (int file = 0; file < DIMENSION_X; file++) {
+                if (BoardTiles[rank, file] != null) {
+                    if (blank_space != 0) {
+                        FEN += blank_space.ToString();
+                        blank_space = 0;
+                    }
+                    Piece p = BoardTiles[rank, file];
+                    switch((Piece.PieceColor) p.get_piece_color()) {
+                        case Piece.PieceColor.White:
+                            FEN += char.ToUpper(char.Parse(p.ToString()));
+                            break;
+                        case Piece.PieceColor.Black:
+                            FEN += char.ToLower(char.Parse(p.ToString()));
+                            break;
+                    }
+                }
+                // null piece, empty square
+                else {
+                    blank_space++;
+                }
+                // 
+                if (file == DIMENSION_Y - 1) {
+                    if (blank_space != 0) {
+                        FEN += blank_space;
+                    }
+                    FEN += "/";
+                    blank_space = 0;
+                }
+            }
+        }
+        FEN = FEN.TrimEnd('/');// remove the last /
+
+        FEN += " ";
+        FEN += gm.turn_to_char(); // turn
+
+        FEN += " ";
+        if (BoardTiles[DIMENSION_Y - 1, 4] != null && BoardTiles[DIMENSION_Y - 1, 4].get_state() == Piece.State.Unmoved) {
+            if (BoardTiles[DIMENSION_Y - 1, 0] != null && BoardTiles[DIMENSION_Y - 1, 0].get_state() == Piece.State.Unmoved) {
+                FEN += "Q";
+            }
+            if (BoardTiles[DIMENSION_Y - 1, DIMENSION_X - 1] != null && BoardTiles[DIMENSION_Y - 1, DIMENSION_X - 1].get_state() == Piece.State.Unmoved) {
+                FEN += "K";
+            }
+        }
+        if (BoardTiles[0, 4] != null && BoardTiles[0, 4].get_state() == Piece.State.Unmoved) {
+            if (BoardTiles[0, DIMENSION_X - 1] != null && BoardTiles[0, DIMENSION_X - 1].get_state() == Piece.State.Unmoved) {
+                FEN += "k";
+            }
+            if (BoardTiles[0, 0] != null && BoardTiles[0, 0].get_state() == Piece.State.Unmoved) {
+                FEN += "q";
+            }
+        }
+
+        FEN += " ";
+        FEN += get_chess_rankfile(en_passant_square);
+
+        FEN += " ";
+        FEN += (gm.get_num_moves() / 2).ToString();
+
+         FEN += " ";
+         FEN += gm.get_num_moves();
+        
+        return Tuple.Create(PieceRefs, FEN);
+    }
     /*
     Assumes standard FEN notation, separated by a / symbol
     modify if you adding a new piece or osmething

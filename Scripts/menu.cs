@@ -33,11 +33,13 @@ public partial class menu : Control
 	public void on_play_ai_random_pressed() {
 		init_scene();
 		scene.set_players("Player", "AIRandom");
+		scene.vs_bot = true;
 	}
 
 	public void on_play_ai_alphabeta_pressed() {
 		init_scene();
 		scene.set_players("Player", "AIAlphaBeta");
+		scene.vs_bot = true;
 	}
 
 	private void init_scene() {

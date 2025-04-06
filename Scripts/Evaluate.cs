@@ -10,6 +10,7 @@ public partial class Evaluate {
     Board board;
 
     Piece[,] piece_board;
+    Dictionary<int, List<Piece>> piece_refs;
 
     public enum pieceVals {
         Pawn = 1,
@@ -96,12 +97,21 @@ public partial class Evaluate {
 
     }
 
-    public Evaluate(Board board, Piece[,] override_board = null) {
+    public Evaluate(Board board, 
+            Piece[,] override_board = null, Dictionary<int, List<Piece>> override_pr = null)
+    {
+
         this.board = board;
         if (override_board != null) {
             this.piece_board = override_board;
         }else {
             this.piece_board = board.BoardTiles;
+        }
+
+        if (override_pr != null) {
+            this.piece_refs = override_pr;
+        }else {
+            this.piece_refs= board.PieceRefs;
         }
     }   
 
@@ -170,7 +180,7 @@ public partial class Evaluate {
     // Returns the piece square table 
     private double get_PST_score() {
         double total = 0.0;
-        Dictionary<int, List<Piece>> pr = board.PieceRefs;
+        Dictionary<int, List<Piece>> pr = piece_refs;
         
         List<Piece> prWhite = pr[(int) Piece.PieceColor.White];
         List<Piece> prBlack = pr[(int) Piece.PieceColor.Black];
