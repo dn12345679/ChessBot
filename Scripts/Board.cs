@@ -370,7 +370,6 @@ public partial class Board : Node2D
             
             if (check_info.Item1 == true) {
             // Item2 not null here by the nature that Item1 is true (check Piece.cs)
-                GD.Print(is_between_king_attacker(p, mti, check_info.Item2[0].get_board_position()) + " " + p);
                 return is_between_king_attacker(p, mti, check_info.Item2[0].get_board_position());
             }
 
