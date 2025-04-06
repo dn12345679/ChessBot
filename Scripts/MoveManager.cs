@@ -342,7 +342,9 @@ public partial class MoveManager : Node2D {
         // king initiated castle from unmoved king. no index check required
         List<Move> moves = new List<Move>();
         // i should have verified king position wasn't checked here, but I checked it below anyway
-        if (p.get_piece_type() == Piece.PieceType.King && p.get_state() == Piece.State.Unmoved) {
+        if (p.get_piece_type() == Piece.PieceType.King && p.get_state() == Piece.State.Unmoved
+        && p.get_board_position().Item1 == 4 && ((p.get_board_position().Item2 == 7 && p.get_piece_color() == (int) Piece.PieceColor.White)
+        || (p.get_board_position().Item2 == 0 && p.get_piece_color() == (int) Piece.PieceColor.Black))) {
             Tuple<int, int> kp = p.get_board_position();
             
             Piece rookr = board.BoardTiles[kp.Item1, kp.Item2 + 3];

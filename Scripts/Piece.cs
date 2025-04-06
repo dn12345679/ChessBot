@@ -465,6 +465,8 @@ public partial class Piece : Node2D
 
 	// methods below inteded for indexing the chessboard array only
 	// ONLY FUNTIONS if board_position is manually updated. 
+
+	//Format: Column, Row
 	public Tuple<int, int> get_board_position() {
 		return PieceIndex;
 	}

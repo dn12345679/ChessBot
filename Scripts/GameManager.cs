@@ -48,7 +48,7 @@ public partial class GameManager : Node2D
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		Board board = new Board(this);
+		Board board = new Board(this, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 		
 		AddChild(board);
 		board.gm = this;

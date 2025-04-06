@@ -124,14 +124,11 @@ public partial class Evaluate {
         double bishop_bonus = get_bishop_availability(); // having both bishops is beneficial. Bishops gain more score with less pieces on their squares
         double rook_bonus = get_rook_availability(); // 
 
-        double king_safety = get_king_safety(); // king gets higher score with more evasive moves (weighed heavier than mobility_score), 
+        //double king_safety = get_king_safety(); // king gets higher score with more evasive moves (weighed heavier than mobility_score), 
         double offensive_rating = 0.0; // closer relative distance to opponent king
 
-
-        return material_score + PST_score + 
-                mobility_score + pawn_score + 
-                bishop_bonus + king_safety + 
-                offensive_rating + rook_bonus;
+        //+ king_safety 
+        return material_score + PST_score + mobility_score + pawn_score + bishop_bonus + offensive_rating + rook_bonus;
     }
     // Returns the material score of the board
     private double get_material_score() {
@@ -361,7 +358,7 @@ public partial class Evaluate {
                     int file = p.get_board_position().Item1;
                     for (int rank = 0; rank < board.DIMENSION_X; rank++) {
 
-                        if (piece_board[file, rank].get_piece_type() == Piece.PieceType.Pawn) {
+                        if (piece_board[file, rank] != null && piece_board[file, rank].get_piece_type() == Piece.PieceType.Pawn) {
                             if (piece_board[file, rank].get_piece_color() == p.get_piece_color()) {
                                 total -= PAWN_PENALTY;
                             }

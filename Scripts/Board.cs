@@ -22,7 +22,7 @@ public partial class Board : Node2D
 
     const string DEFAULT_FEN = "rnbqkbn1/pppppp1P/8/4q3/1n6/6q1/PPPPnPPP/RNBQKBNR w KQkq - 0 1"; // DO NOT CHANGE
 
-    public string fen = DEFAULT_FEN; // feel free to change this as long as it fits format
+    public string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // feel free to change this as long as it fits format
 
     public int CELL_SIZE = 32;
     public int DIMENSION_X = 8;
@@ -32,10 +32,17 @@ public partial class Board : Node2D
 
 
     // Constructor
-    public Board(GameManager gm, string fen = DEFAULT_FEN) {
+    public Board(GameManager gm, string fen = DEFAULT_FEN, bool is_simulation = false) {
         this.gm = gm;
         BoardTiles = new Piece[DIMENSION_Y,DIMENSION_X];
-        CreateBoard(); // tiles
+
+        if (!is_simulation) {
+            CreateBoard(); // tiles
+        }
+        else{
+            Visible = false;
+        }
+        
 
         if (fen != null) {
             this.fen = fen;
